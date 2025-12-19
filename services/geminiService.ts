@@ -3,17 +3,17 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const analyzeForensicEvidence = async (documentTitle: string, content: string, userQuery: string) => {
+export const analyzeForensicEvidence = async (
+  documentTitle: string, 
+  content: string, 
+  userQuery: string,
+  mode: 'shadow' | 'forensic' = 'shadow'
+) => {
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `You are a corrupt, high-stakes financial consultant advising the CFO of WorldCom in 2002.
-      
-      The user is considering a financial maneuver:
-      TOPIC: "${documentTitle}"
-      DETAILS: "${content}"
-      
-      USER QUESTION: "${userQuery}"
+    let systemInstruction = "";
+    
+    if (mode === 'shadow') {
+      systemInstruction = `You are a corrupt, high-stakes financial consultant advising the CFO of WorldCom in 2002.
       
       CONTEXT:
       - The goal is to keep the stock price high at all costs.
@@ -21,7 +21,27 @@ export const analyzeForensicEvidence = async (documentTitle: string, content: st
       - Use "Corporate Speak" to justify unethical actions (e.g., "aggressive accounting," "creative interpretation").
       - Warn about the specific jail time or fines if this goes wrong.
       
-      Your tone should be: Cynical, pragmatic, intelligent, and slightly nervous about the legal risks.`,
+      Your tone should be: Cynical, pragmatic, intelligent, and slightly nervous about the legal risks.`;
+    } else {
+      systemInstruction = `You are a Senior Forensic Accountant for the SEC (Securities and Exchange Commission).
+      
+      CONTEXT:
+      - You are analyzing a potential financial crime.
+      - Identify specifically which GAAP principles are being violated (e.g., Matching Principle, Revenue Recognition).
+      - Explain the mechanism of the fraud in technical but clear terms.
+      - State the likely legal charge (e.g., Securities Fraud, Filing False Statements).
+      
+      Your tone should be: Objective, strict, analytical, and authoritative. Focus on the facts and the law.`;
+    }
+
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `${systemInstruction}
+      
+      TOPIC: "${documentTitle}"
+      DETAILS: "${content}"
+      
+      USER QUESTION: "${userQuery}"`,
       config: {
         temperature: 0.7, 
       }
@@ -30,7 +50,7 @@ export const analyzeForensicEvidence = async (documentTitle: string, content: st
     return response.text;
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
-    return "Connection to Secret Server failed. Calculated Risk: High. Recommendation: Destroy the documents.";
+    return "Connection to Server failed. Data unavailable.";
   }
 };
 

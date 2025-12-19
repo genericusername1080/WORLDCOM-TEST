@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Book, User, Wind, Activity, Sun, Cloud, CloudRain, Clock, Target, Briefcase, TrendingUp, AlertTriangle, Loader2, X } from 'lucide-react';
-import { DecisionPoint, GameLevel } from '../types';
+import { Search, Book, User, Wind, Activity, Sun, Cloud, CloudRain, Clock, Target, Briefcase, TrendingUp, AlertTriangle, Loader2, X, BarChart3, Keyboard, MousePointer, Eye, Hand } from 'lucide-react';
+import { DecisionPoint, GameLevel, EvidenceItem } from '../types';
 import { WORLD_IMPACT } from '../constants';
 import { searchRelevantEvidence } from '../services/geminiService';
 
@@ -14,11 +14,13 @@ interface HUDProps {
   weather: 'clear' | 'cloudy' | 'rainy';
   timeOfDay: number;
   currentLevel: GameLevel;
+  hoveredItem: EvidenceItem | null;
   onToggleWeather: () => void;
   onAdvanceTime: () => void;
   onOpenQuiz: () => void;
   onOpenTimeline: () => void;
   onOpenKnowledge: () => void;
+  onOpenMarket: () => void;
   onCheckCompletion: () => void;
   currentDate: string;
 }
@@ -32,11 +34,13 @@ const HUD: React.FC<HUDProps> = ({
   weather,
   timeOfDay,
   currentLevel,
+  hoveredItem,
   onToggleWeather,
   onAdvanceTime,
   onOpenQuiz, 
   onOpenTimeline, 
   onOpenKnowledge, 
+  onOpenMarket,
   currentDate 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,6 +90,36 @@ const HUD: React.FC<HUDProps> = ({
 
   return (
     <div className="fixed inset-0 pointer-events-none z-10 flex flex-col justify-between p-6 overflow-hidden">
+      
+      {/* Reticle & Interaction Prompt */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4 transition-opacity duration-300">
+          <div className={`w-1 h-1 bg-white rounded-full shadow-[0_0_10px_white] ${hoveredItem ? 'scale-150 bg-emerald-400' : 'opacity-50'}`} />
+          {hoveredItem && (
+            <div className="animate-in fade-in zoom-in slide-in-from-bottom-4 duration-200 flex flex-col items-center">
+                 <div className="bg-black/80 backdrop-blur border border-emerald-500/50 px-4 py-2 rounded flex items-center gap-3">
+                     <div className="w-6 h-6 bg-slate-800 border border-slate-600 rounded flex items-center justify-center text-white font-bold text-xs">E</div>
+                     <span className="text-emerald-400 font-orbitron text-xs tracking-widest uppercase font-bold">INSPECT EVIDENCE</span>
+                 </div>
+                 <div className="mt-2 text-white font-bold text-sm bg-black/50 px-3 py-1 rounded shadow-lg">{hoveredItem.name}</div>
+            </div>
+          )}
+      </div>
+
+      {/* Controls Info (Bottom Left) */}
+      <div className={`fixed bottom-6 left-6 pointer-events-auto transition-transform duration-500 ease-in-out ${isVisible ? 'translate-y-0' : 'translate-y-32'}`}>
+         <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700 p-4 rounded-lg shadow-xl">
+             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                 <Keyboard size={12} /> Controls
+             </div>
+             <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs font-mono text-slate-300">
+                 <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">W,A,S,D</span> Move</div>
+                 <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">MOUSE</span> Look</div>
+                 <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">E</span> Interact</div>
+                 <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">TAB</span> Toggle HUD</div>
+             </div>
+         </div>
+      </div>
+
       {/* Top Bar */}
       <div className={`flex justify-between items-start pointer-events-auto transition-transform duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-32'}`}>
         <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700 p-4 rounded-lg flex gap-8 font-mono text-sm shadow-xl min-w-[300px]">
@@ -142,7 +176,7 @@ const HUD: React.FC<HUDProps> = ({
       </div>
 
       {/* Side Panels (Decisions List) */}
-      <div className="flex justify-between items-center h-full my-4 relative">
+      <div className="flex justify-between items-center h-full my-4 relative pointer-events-none">
         <div className={`w-72 h-2/3 flex flex-col pointer-events-auto transition-transform duration-500 ease-in-out ${isVisible ? 'translate-x-0' : '-translate-x-[110%]'}`}>
           <div className="bg-slate-900/90 border border-red-500/30 p-3 rounded-t-xl backdrop-blur-xl flex items-center justify-between shadow-2xl">
             <span className="font-orbitron text-red-400 text-[10px] tracking-[0.2em] flex items-center gap-2 uppercase font-bold">
@@ -227,7 +261,7 @@ const HUD: React.FC<HUDProps> = ({
                 ))}
               </div>
               <button onClick={onOpenKnowledge} className="mt-6 w-full py-2 bg-slate-800 border border-slate-600 text-slate-300 text-[10px] font-bold rounded uppercase tracking-widest hover:bg-slate-700 transition-colors">
-                Employee Directory
+                Employee Directory [I]
               </button>
            </div>
         </div>
@@ -237,7 +271,11 @@ const HUD: React.FC<HUDProps> = ({
       <div className={`flex justify-center gap-4 pointer-events-auto mb-4 transition-transform duration-500 ease-in-out ${isVisible ? 'translate-y-0' : 'translate-y-32'}`}>
         <button onClick={onOpenTimeline} className="px-6 py-3 bg-slate-900/90 border border-slate-700 hover:border-sky-500 rounded-lg flex items-center gap-2 group transition-all backdrop-blur-md">
           <Activity size={18} className="text-sky-400 group-hover:scale-110" />
-          <span className="font-bold text-sm uppercase font-orbitron">History</span>
+          <span className="font-bold text-sm uppercase font-orbitron">History [T]</span>
+        </button>
+        <button onClick={onOpenMarket} className="px-6 py-3 bg-slate-900/90 border border-slate-700 hover:border-emerald-500 rounded-lg flex items-center gap-2 group transition-all backdrop-blur-md">
+          <BarChart3 size={18} className="text-emerald-400 group-hover:scale-110" />
+          <span className="font-bold text-sm uppercase font-orbitron">Terminal [M]</span>
         </button>
       </div>
     </div>

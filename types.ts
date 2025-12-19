@@ -54,20 +54,21 @@ export enum GameScene {
   GAMEPLAY = 'GAMEPLAY',
   GAME_OVER_FIRED = 'GAME_OVER_FIRED',
   GAME_OVER_ARRESTED = 'GAME_OVER_ARRESTED',
-  VICTORY_ESCAPED = 'VICTORY_ESCAPED' // Historical accuracy: Nobody really escaped, but maybe "Sentenced" is the end
+  VICTORY_ESCAPED = 'VICTORY_ESCAPED'
 }
 
 export enum AuditRank {
   CFO = 'Chief Financial Officer',
   CONTROLLER = 'Corporate Controller',
-  CEO = 'Chief Executive Officer'
+  CEO = 'Chief Executive Officer',
+  VP = 'VP of Internal Audit'
 }
 
 export interface GameLevel {
   id: number;
   title: string;
   rank: AuditRank;
-  targetEPS: string; // Earnings Per Share target
+  targetEPS: string; 
   description: string;
 }
 
@@ -93,4 +94,9 @@ export interface EvidenceItem {
     title: string;
     content: string;
   };
+}
+
+export interface StockDataPoint {
+  period: string;
+  price: number;
 }

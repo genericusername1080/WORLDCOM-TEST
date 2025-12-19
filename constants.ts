@@ -4,236 +4,384 @@ import { DecisionPoint, FraudMethod, QuizQuestion, TimelineEvent, KeyFigure, Imp
 export const GAME_LEVELS: GameLevel[] = [
   {
     id: 1,
-    title: "Q3 2000: The Slowdown",
-    rank: AuditRank.CONTROLLER,
-    targetEPS: "$0.45",
-    description: "The Telecom bubble is bursting. Customers are defaulting. We are $685M short on revenue. Wall Street expects growth. Fix it."
+    title: "1999: The Height of the Bubble",
+    rank: AuditRank.CFO,
+    targetEPS: "$0.30",
+    description: "The stock is soaring at $64. The Sprint merger is on the table. We need to show efficiency to get regulatory approval. Keep the Expense-to-Revenue (E/R) ratio down."
   },
   {
     id: 2,
-    title: "Q1 2001: The Slippery Slope",
+    title: "Q3 2000: The Burst & The Failed Merger",
     rank: AuditRank.CFO,
-    targetEPS: "$0.52",
-    description: "Line costs are eating our profits. The 'Prepaid Capacity' accounts are messy. Ebbers needs the stock high to cover his margin calls. Do whatever it takes."
+    targetEPS: "$0.45",
+    description: "Regulators blocked the Sprint merger. The Dot-com bubble burst. Customers are defaulting. We are $685M short on revenue. Wall Street still expects double-digit growth."
   },
   {
     id: 3,
-    title: "Q1 2002: The House of Cards",
+    title: "Q1 2001: The Slippery Slope",
+    rank: AuditRank.CFO,
+    targetEPS: "$0.52",
+    description: "Line costs are eating our profits. The 'Prepaid Capacity' accounts are messy. Ebbers has $400M in margin calls and needs the stock high. We need to capitalize operating expenses."
+  },
+  {
+    id: 4,
+    title: "Q4 2001: The Deepening Hole",
+    rank: AuditRank.CFO,
+    targetEPS: "$0.60",
+    description: "The fraud is now in the billions. We are moving line costs to Property, Plant & Equipment (PP&E). Vinson and Normand are threatening to quit. Keep them in line."
+  },
+  {
+    id: 5,
+    title: "Q2 2002: The House of Cards",
     rank: AuditRank.CFO,
     targetEPS: "$0.75",
-    description: "The hole is $3.8 billion deep. Internal Audit is asking questions. We need one last massive adjustment to keep the stock afloat before we can restructure."
+    description: "The hole is $3.8 billion deep. Cynthia Cooper is interviewing the capital expenditure team. The SEC has sent a request for information. Survive."
   }
 ];
 
 export const DECISION_POINTS: DecisionPoint[] = [
-  // LEVEL 1
+  // LEVEL 1: 1999
+  {
+    id: 'sprint_merger_synergies',
+    title: 'Sprint Merger "Synergies"',
+    problem: 'To justify the Sprint merger to the DOJ, we need to show lower Line Costs. Actual costs are 42% of revenue. We need them at 38%.',
+    resolved: false,
+    level: 1,
+    position: { x: 10, y: 2, z: 10 },
+    options: {
+      honest: {
+        label: "Report actual 42% ratio",
+        stockImpact: -10.0,
+        suspicionImpact: 0,
+        description: "The DOJ sees we are inefficient. The merger might fail on economics alone. Stock dips.",
+        aiPrompt: "Impact of high operating ratios on telecom merger approvals in 1999?"
+      },
+      fraud: {
+        label: "Release $400M Tax Reserves",
+        stockImpact: 5.0,
+        suspicionImpact: 10,
+        description: "Release old tax cushions into income to offset line costs. It's a 'one-time' adjustment.",
+        aiPrompt: "Is releasing tax reserves to boost operating income GAAP compliant?"
+      }
+    }
+  },
+  {
+    id: 'mci_integration_writeoff',
+    title: 'MCI Integration Costs',
+    problem: 'We have lingering costs from the MCI acquisition. We can write them off now or hide them.',
+    resolved: false,
+    level: 1,
+    position: { x: -15, y: 2, z: -15 },
+    options: {
+      honest: {
+        label: "Take the charge now",
+        stockImpact: -5.0,
+        suspicionImpact: 0,
+        description: "Short term pain, but clean books.",
+        aiPrompt: "Accounting treatment for merger integration costs."
+      },
+      // For simplicity in this demo structure, providing fraud option here even if historically subtle
+      fraud: {
+        label: "Double-dip the write-off",
+        stockImpact: 8.0,
+        suspicionImpact: 15,
+        description: "Write off ordinary expenses as 'merger integration charges' to classify them as non-recurring.",
+        aiPrompt: "What is 'Big Bath' accounting in mergers?"
+      }
+    }
+  },
+
+  // LEVEL 2: Q3 2000
   {
     id: 'bad_debt_reserve',
-    title: 'Unpaid Customer Bills',
-    problem: 'Clients valued at $685M have gone bankrupt. If we write this off as a loss, we miss our earnings target.',
-    resolved: false,
-    level: 1,
-    position: { x: 15, y: 2, z: 10 },
-    options: {
-      honest: {
-        label: "Write off the bad debt",
-        stockImpact: -15.0,
-        suspicionImpact: -5,
-        description: "You report the loss. The stock takes a hit. Ebbers screams at you in the boardroom.",
-        aiPrompt: "What are the legal consequences of accurately reporting a massive bad debt write-off versus hiding it?"
-      },
-      fraud: {
-        label: "Release Reserves to Income",
-        stockImpact: 5.0,
-        suspicionImpact: 15,
-        description: "You dip into the reserve accounts intended for tax liabilities and count it as revenue. The books balance.",
-        aiPrompt: "How can a company justify releasing tax reserves into income to hide operating losses?"
-      }
-    }
-  },
-  {
-    id: 'line_cost_pressure',
-    title: 'Rising Line Costs',
-    problem: 'Network access fees are 45% of our revenue. Wall Street expects them to be 40%. We are $828M over budget.',
-    resolved: false,
-    level: 1,
-    position: { x: 45, y: 2, z: -10 },
-    options: {
-      honest: {
-        label: "Report the increased expense",
-        stockImpact: -20.0,
-        suspicionImpact: 0,
-        description: "Investors panic. Analysts downgrade the stock. You are warned your job is at risk.",
-        aiPrompt: "Explain the impact of high 'line costs' on a telecom company's stock price in 2000."
-      },
-      fraud: {
-        label: "Use 'Cookie Jar' Reserves",
-        stockImpact: 2.0,
-        suspicionImpact: 20,
-        description: "You direct Vinson to release $828M from a generic reserve liability account to offset the costs.",
-        aiPrompt: "What is 'Cookie Jar Accounting' and why is it illegal?"
-      }
-    }
-  },
-  // LEVEL 2
-  {
-    id: 'prepaid_capacity_entry',
-    title: 'The Prepaid Capacity Problem',
-    problem: 'We have $2 Billion in unused network capacity fees. It looks like a massive waste of cash.',
+    title: 'The Bad Debt Crisis',
+    problem: 'Dot-com clients (Terra, Webvan) are bankrupt. $685M in uncollectible bills. If we book this bad debt, we miss the quarter.',
     resolved: false,
     level: 2,
-    position: { x: -25, y: 2, z: 20 },
+    position: { x: 25, y: 2, z: 25 },
     options: {
       honest: {
-        label: "Expense it as operating cost",
-        stockImpact: -30.0,
-        suspicionImpact: -10,
-        description: "The quarterly earnings turn red. Ebbers threatens to fire the entire finance department.",
-        aiPrompt: "Why must operating expenses be deducted immediately rather than over time?"
+        label: "Write off debt",
+        stockImpact: -25.0,
+        suspicionImpact: -5,
+        description: "Miss earnings by 15 cents. Stock crashes. Ebbers is furious.",
+        aiPrompt: "Consequences of missing earnings estimates in 2000?"
       },
       fraud: {
-        label: "Capitalize as Asset",
+        label: "Release Line Cost Reserves",
+        stockImpact: 5.0,
+        suspicionImpact: 20,
+        description: "We have excess accruals for carrier disputes. Release them to revenue to cover the bad debt.",
+        aiPrompt: "Using liability reserve releases to mask bad debt expense."
+      }
+    }
+  },
+  {
+    id: 'unallocated_revenue',
+    title: 'Corporate Unallocated',
+    problem: 'The MonRev report shows we are short on revenue growth targets. The regions can\'t find any more sales.',
+    resolved: false,
+    level: 2,
+    position: { x: -25, y: 2, z: 25 },
+    options: {
+      honest: {
+        label: "Report flat revenue",
+        stockImpact: -30.0,
+        suspicionImpact: 0,
+        description: "The 'Growth Story' ends. Analysts downgrade WorldCom from Buy to Hold.",
+        aiPrompt: "Market reaction to flat revenue in a growth stock."
+      },
+      fraud: {
+        label: "Book 'Unallocated' Revenue",
+        stockImpact: 5.0,
+        suspicionImpact: 25,
+        description: "Journal Entry: Debit A/R, Credit Revenue. No customer attached. Just call it 'Corporate Unallocated'.",
+        aiPrompt: "How to detect top-side journal entries with no supporting documentation?"
+      }
+    }
+  },
+
+  // LEVEL 3: Q1 2001
+  {
+    id: 'line_cost_capitalization',
+    title: 'The Capitalization Plan',
+    problem: 'Line costs are $771M over budget. There are no more reserves to release. We need a new way to hide expenses.',
+    resolved: false,
+    level: 3,
+    position: { x: 40, y: 2, z: 0 },
+    options: {
+      honest: {
+        label: "Report the loss",
+        stockImpact: -40.0,
+        suspicionImpact: 0,
+        description: "The stock drops below $10. Ebbers receives margin calls.",
+        aiPrompt: "What happens when a CEO gets margin called on their own company stock?"
+      },
+      fraud: {
+        label: "Capitalize Line Costs",
         stockImpact: 10.0,
         suspicionImpact: 35,
-        description: "You record the fees as a 'Capital Asset' (Prepaid Capacity). This spreads the cost over 10 years, boosting today's profit.",
-        aiPrompt: "Analyze the risk of capitalizing operating expenses (E/E to CapEx transfers) under GAAP."
+        description: "Move $771M from 'Line Cost Expense' to 'Asset: Prepaid Capacity'. We depreciate it over 10 years instead of paying it now.",
+        aiPrompt: "Difference between Operating Expense (OpEx) and Capital Expenditure (CapEx)."
       }
     }
   },
   {
-    id: 'monrev_gap',
-    title: 'The MonRev Gap',
-    problem: 'The "MonRev" report shows actual revenue is flat. Reported revenue needs to show double-digit growth.',
-    resolved: false,
-    level: 2,
-    position: { x: -60, y: 2, z: 45 },
-    options: {
-      honest: {
-        label: "Adjust guidance down",
-        stockImpact: -25.0,
-        suspicionImpact: 0,
-        description: "You tell the truth. The stock plummets to single digits.",
-        aiPrompt: "What happens when a growth company suddenly reports flat revenue?"
-      },
-      fraud: {
-        label: "Post 'Corporate Unallocated' Revenue",
-        stockImpact: 8.0,
-        suspicionImpact: 25,
-        description: "You order a manual journal entry to add $100M in revenue labeled 'Corporate Unallocated' with no backup.",
-        aiPrompt: "What are the indicators of a 'top-side' journal entry fraud?"
-      }
-    }
-  },
-  // LEVEL 3
-  {
-    id: 'andersen_audit',
-    title: 'Auditor Inquiry',
-    problem: 'Arthur Andersen is asking about the asset transfers. They want to see the capitalization policy.',
+    id: 'prepaid_capacity_memo',
+    title: 'Prepaid Capacity Memo',
+    problem: `TO: Scott Sullivan, CFO
+FROM: David Myers, Controller
+SUBJECT: Q3 Capitalization of Line Costs
+
+Per your instruction, we are transferring $771 million of line cost expenses to the 'Prepaid Capacity' asset account. 
+
+Please note that there is no supporting documentation for these entries. If the auditors ask for invoices, we do not have them.
+
+This treatment is aggressive and likely violates GAAP matching principles.`,
     resolved: false,
     level: 3,
-    position: { x: 10, y: 2, z: -80 },
+    position: { x: 0, y: 2, z: 0 },
     options: {
-      honest: {
-        label: "Confess to Andersen",
-        stockImpact: -99.0,
-        suspicionImpact: 100,
-        description: "The game is up. You hand over the files. The fraud is exposed immediately.",
-        aiPrompt: "What is the role of an external auditor like Arthur Andersen in detecting fraud?"
-      },
-      fraud: {
-        label: "Withhold Information",
-        stockImpact: 0.0,
-        suspicionImpact: 40,
-        description: "You tell the auditors the methodology is proprietary and effective. You block their access to the smart ledger.",
-        aiPrompt: "What are the penalties for obstructing a federal audit?"
-      }
+      honest: { label: '', stockImpact: 0, suspicionImpact: 0, description: '', aiPrompt: '' },
+      fraud: { label: '', stockImpact: 0, suspicionImpact: 0, description: '', aiPrompt: '' }
     }
   },
   {
-    id: 'cynthia_cooper',
-    title: 'Internal Audit Snooping',
-    problem: 'Cynthia Cooper is asking for access to the Capital Expenditure server. She is suspicious.',
+    id: 'betty_vinson_reluctance',
+    title: 'The Accountants Rebel',
+    problem: 'Betty Vinson and Troy Normand are refusing to make the entries. They know it is illegal.',
     resolved: false,
     level: 3,
-    position: { x: -35, y: 2, z: -15 },
+    position: { x: -40, y: 2, z: 0 },
     options: {
       honest: {
-        label: "Grant Access",
-        stockImpact: -99.0,
-        suspicionImpact: 100,
-        description: "She finds the $3.8B entries. She goes to the board. It's over.",
-        aiPrompt: "How did Cynthia Cooper uncover the WorldCom fraud?"
+        label: "Listen to them",
+        stockImpact: -50.0,
+        suspicionImpact: -10,
+        description: "You stop the fraud. The company collapses, but you stay out of jail.",
+        aiPrompt: "Whistleblower protections in 2001."
       },
       fraud: {
-        label: "Delay and Obfuscate",
-        stockImpact: -5.0,
+        label: "Coerce them",
+        stockImpact: 2.0,
+        suspicionImpact: 20,
+        description: "Tell them it's just for one quarter. Tell them the plane will crash if they don't do it. Pay them a retention bonus.",
+        aiPrompt: "Psychological tactics used in corporate fraud coercion."
+      }
+    }
+  },
+
+  // LEVEL 4: Q4 2001
+  {
+    id: 'ppe_transfers',
+    title: 'Hiding in PP&E',
+    problem: 'The "Prepaid Capacity" account is getting too big ($2B+). Auditors might notice. We need a better hiding spot.',
+    resolved: false,
+    level: 4,
+    position: { x: 10, y: 2, z: -40 },
+    options: {
+      honest: {
+        label: "Restate financials",
+        stockImpact: -80.0,
+        suspicionImpact: 80,
+        description: "Admission of guilt. Immediate investigation.",
+        aiPrompt: "Process of financial restatement."
+      },
+      fraud: {
+        label: "Spread to PP&E",
+        stockImpact: 5.0,
+        suspicionImpact: 30,
+        description: "Move the costs into general 'Property, Plant, and Equipment' accounts across thousands of assets so it's harder to trace.",
+        aiPrompt: "How auditors verify Property, Plant, and Equipment (PP&E) assets."
+      }
+    }
+  },
+
+  // LEVEL 5: Q2 2002
+  {
+    id: 'cynthia_cooper_audit',
+    title: 'Cooper\'s Investigation',
+    problem: 'Cynthia Cooper (Internal Audit) found a $2B capital entry with no invoice. She is asking David Myers for backup.',
+    resolved: false,
+    level: 5,
+    position: { x: -10, y: 2, z: -40 },
+    options: {
+      honest: {
+        label: "Admit it's an error",
+        stockImpact: -95.0,
+        suspicionImpact: 100,
+        description: "Game over. The fraud is revealed.",
+        aiPrompt: "Impact of the WorldCom fraud discovery."
+      },
+      fraud: {
+        label: "Block Access",
+        stockImpact: -10.0,
         suspicionImpact: 50,
-        description: "You tell her to wait until next quarter. You promote her boss to keep him quiet.",
-        aiPrompt: "Describe the pressure placed on internal auditors during the WorldCom scandal."
+        description: "Tell Myers to delay her. Change the passwords to the accounting system. Say it's 'Prepaid Capacity' again.",
+        aiPrompt: "Obstruction of justice charges in corporate fraud."
+      }
+    }
+  },
+  {
+    id: 'andersen_collapse',
+    title: 'Arthur Andersen Collapse',
+    problem: 'Enron has collapsed. Our auditor, Arthur Andersen, is dissolving. The SEC is looking at all their clients, including us.',
+    resolved: false,
+    level: 5,
+    position: { x: 0, y: 2, z: 50 },
+    options: {
+      honest: {
+        label: "Cooperate with SEC",
+        stockImpact: -90.0,
+        suspicionImpact: 100,
+        description: "You hand over the books.",
+        aiPrompt: "SEC investigation procedures."
+      },
+      fraud: {
+        label: "Shred Documents",
+        stockImpact: 0.0,
+        suspicionImpact: 60,
+        description: "Destroy the memos regarding the capitalization strategy.",
+        aiPrompt: "Legal consequences of shredding documents during an investigation."
       }
     }
   }
 ];
 
-// Reusing Quiz Structure but as "Press Interviews" or "Board Questions"
 export const QUIZ_QUESTIONS: QuizQuestion[] = [
+  // Level 1
   {
     level: 1,
-    question: 'Board Member: "Why are we using reserves to pay for line costs?"',
+    question: 'Analyst: "How did you achieve such low line costs despite the traffic increase?"',
     options: [
-      'It is a standard GAAP procedure.',
-      'We are just smoothing out a one-time anomaly.',
-      'I am stealing money.',
-      'We forgot to pay the bills.'
-    ],
-    correct: 1,
-    explanation: 'Framing fraud as a "one-time fix" was a key tactic used to convince reluctant accountants to comply.'
-  },
-  {
-    level: 2,
-    question: 'Analyst Jack Grubman: "Your capital spending is high, but profits are up. Is this sustainable?"',
-    options: [
-      'No, we are cooking the books.',
-      'Yes, we are investing in the future of the internet.',
-      'Sell the stock now.',
-      'I take the 5th amendment.'
-    ],
-    correct: 1,
-    explanation: 'WorldCom constantly touted its investment in network capacity to justify high capital spending (which was actually hidden expenses).'
-  },
-  {
-    level: 3,
-    question: 'SEC Regulator: "Can you explain the $3.8 Billion difference between your cash flow and reported income?"',
-    options: [
-      'It is a complex prepaid capacity lease structure.',
-      'It is fraud.',
-      'Ask Arthur Andersen.',
-      'I resign.'
+      'We renegotiated contracts efficiently.',
+      'We released tax reserves.',
+      'I will not answer that.',
+      'Magic.'
     ],
     correct: 0,
-    explanation: 'Obfuscation and complex terminology were used to confuse regulators and auditors.'
+    explanation: 'Lying to analysts was routine. Management cited "synergies" and "contract renegotiations" to explain artificial cost drops.'
+  },
+  // Level 2
+  {
+    level: 2,
+    question: 'Board Member: "Why is our revenue growing when the rest of the industry is flat?"',
+    options: [
+      'We are taking market share from AT&T.',
+      'We are booking fake revenue.',
+      'The industry data is wrong.',
+      'We are just better.'
+    ],
+    correct: 0,
+    explanation: 'Ebbers constantly claimed WorldCom was a "growth stock" taking share from incumbents to mask the flat actuals.'
+  },
+  // Level 3
+  {
+    level: 3,
+    question: 'Betty Vinson: "I can\'t do this entry Scott. It\'s just wrong. What account should I even use?"',
+    options: [
+      'Prepaid Capacity (Asset).',
+      'Office Supplies (Expense).',
+      'Salary Expense.',
+      'Don\'t do it then.'
+    ],
+    correct: 0,
+    explanation: 'The famous "Prepaid Capacity" account was used as a dumping ground for operating line costs.'
+  },
+  // Level 4
+  {
+    level: 4,
+    question: 'Auditor: "We need to see the invoices for this $2B in capital spending."',
+    options: [
+      'It is a fixed-rate allocation, not invoice based.',
+      'The dog ate them.',
+      'Talk to the CEO.',
+      'Here are the fake invoices.'
+    ],
+    correct: 0,
+    explanation: 'Sullivan argued that the costs were fixed allocations for network capacity, implying they were assets, to avoid showing specific invoices.'
+  },
+  // Level 5
+  {
+    level: 5,
+    question: 'SEC: "Mr. Sullivan, did you direct the capitalization of line costs?"',
+    options: [
+      'I rely on my accountants to follow GAAP.',
+      'Yes, I did.',
+      'What is capitalization?',
+      'No comment.'
+    ],
+    correct: 0,
+    explanation: 'Sullivan initially claimed he thought the entries were proper under a theory of "matching principle," shifting blame to interpretation.'
   }
 ];
 
 export const HISTORICAL_TIMELINE: TimelineEvent[] = [
-  { date: '1999', event: 'Revenue growth slows. Pressure mounts to maintain the stock price.' },
-  { date: 'Q3 2000', event: 'First major fraudulent entry: $828M of reserves released to income.' },
-  { date: '2001', event: 'CFO Sullivan directs the capitalization of $3.8B in line costs.' },
-  { date: 'June 2002', event: 'Cooper finds the fraud. Sullivan fired. Stock hits $0.09.' }
+  { date: '1999', event: 'WorldCom stock peaks at $64. Failed merger with Sprint proposed.' },
+  { date: 'July 2000', event: 'DOJ blocks Sprint merger. Dot-com bubble bursts.' },
+  { date: 'Oct 2000', event: 'Third Quarter earnings warning. Stock drops.' },
+  { date: '2001', event: '$3.8 Billion in Line Costs capitalized into assets.' },
+  { date: 'Mar 2002', event: 'SEC requests information. Ebbers resigns in April.' },
+  { date: 'June 2002', event: 'Cynthia Cooper unearths the fraud. WorldCom admits $3.8B error.' },
+  { date: 'July 2002', event: 'WorldCom files for Chapter 11 Bankruptcy.' }
 ];
 
 export const KEY_FIGURES: KeyFigure[] = [
-  { name: 'Bernard Ebbers', role: 'CEO', avatar: '👔', description: 'Your boss. He owes the bank $400M backed by WorldCom stock. If the stock drops, he is ruined.', outcome: 'Demands results.' },
-  { name: 'Scott Sullivan', role: 'You (CFO)', avatar: '📊', description: 'The "Whiz Kid" of Wall Street. You believe you can fix the company if you just buy more time.', outcome: 'Current Status: Stressed.' },
-  { name: 'Cynthia Cooper', role: 'Internal Audit', avatar: '🔍', description: 'Tenacious and detail-oriented. She is asking too many questions.', outcome: 'Threat Level: High.' }
+  { name: 'Bernie Ebbers', role: 'CEO', avatar: '🤠', description: 'The Cowboy CEO. Obsessed with the stock price. Owes $400M on margin.', outcome: 'Convicted: 25 Years.' },
+  { name: 'Scott Sullivan', role: 'CFO (You)', avatar: '📉', description: 'The Architect. Believed the revenue dip was temporary. Just needed to bridge the gap.', outcome: 'Convicted: 5 Years.' },
+  { name: 'Cynthia Cooper', role: 'VP Internal Audit', avatar: '🕵️‍♀️', description: 'The Whistleblower. Worked at night to find the entries.', outcome: 'Time Person of the Year.' },
+  { name: 'David Myers', role: 'Controller', avatar: '📋', description: 'Executed Sullivan\'s orders. "I thought we would fix it next quarter."', outcome: 'Convicted: 1 Year.' },
+  { name: 'Betty Vinson', role: 'Director', avatar: '💻', description: 'Made the entries. Was told "just one more time".', outcome: 'Convicted: 5 Months.' }
 ];
 
 export const WORLD_IMPACT: ImpactFact[] = [
-  { title: 'Market Cap', detail: 'Current Value of WorldCom.', stat: '$120B' },
-  { title: 'Employees', detail: 'Jobs at risk if we fail.', stat: '60,000' }
+  { title: 'Market Cap Lost', detail: 'From peak to trough.', stat: '$180B' },
+  { title: 'Jobs Lost', detail: 'Employees laid off.', stat: '30,000' },
+  { title: 'Pension Funds', detail: 'Retirement savings wiped out.', stat: '$1.1B' }
 ];
 
 export const FRAUD_METHODS: FraudMethod[] = [
-  { name: 'Cookie Jar Reserves', description: 'Releasing rainy-day funds to boost current profit.', amount: '$3.8B' },
-  { name: 'CapEx Transfers', description: 'Hiding operating costs as long-term assets.', amount: '$3.8B' }
+  { name: 'Cookie Jar Reserves', description: 'Releasing tax liabilities to revenue.', amount: '$3.3B' },
+  { name: 'CapEx Transfers', description: 'Moving Line Costs to Assets.', amount: '$3.8B' },
+  { name: 'Corporate Unallocated', description: 'Fake revenue entries.', amount: '$1.2B' }
 ];

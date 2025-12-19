@@ -1,19 +1,21 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { GameScene, DecisionPoint, GameLevel, ChoiceOutcome } from './types';
+import { GameScene, DecisionPoint, GameLevel, ChoiceOutcome, StockDataPoint, EvidenceItem } from './types';
 import { DECISION_POINTS, HISTORICAL_TIMELINE, QUIZ_QUESTIONS, GAME_LEVELS } from './constants';
 import ThreeDWorld from './components/ThreeDWorld';
 import HUD from './components/HUD';
-import { DecisionModal, QuizModal, TimelineModal, KnowledgeHubModal, LevelTransitionModal } from './components/Modals';
+import { DecisionModal, QuizModal, TimelineModal, KnowledgeHubModal, LevelTransitionModal, MarketTerminalModal, DocumentModal } from './components/Modals';
 import { Briefcase, BookOpen, Search, Skull, AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
   const [scene, setScene] = useState<GameScene>(GameScene.LOADING);
   const [decisionPoints, setDecisionPoints] = useState<DecisionPoint[]>(DECISION_POINTS);
   const [activeDecision, setActiveDecision] = useState<DecisionPoint | null>(null);
+  const [activeDocument, setActiveDocument] = useState<{title: string, content: string} | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showKnowledge, setShowKnowledge] = useState(false);
+  const [showMarket, setShowMarket] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
   const [currentLevelId, setCurrentLevelId] = useState(1);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -21,9 +23,13 @@ const App: React.FC = () => {
   const [weather, setWeather] = useState<'clear' | 'cloudy' | 'rainy'>('clear');
   const [timeOfDay, setTimeOfDay] = useState(9);
   
+  // Interaction State
+  const [hoveredItem, setHoveredItem] = useState<EvidenceItem | null>(null);
+
   // Game State Stats
   const [stockPrice, setStockPrice] = useState(64.50);
   const [suspicion, setSuspicion] = useState(10); // 0-100%
+  const [stockHistory, setStockHistory] = useState<StockDataPoint[]>([{ period: 'Start', price: 64.50 }]);
 
   const currentLevel = useMemo(() => 
     GAME_LEVELS.find(l => l.id === currentLevelId) || GAME_LEVELS[0], 
@@ -49,12 +55,28 @@ const App: React.FC = () => {
     }
   }, [scene]);
 
+  // Global Hotkeys
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (scene !== GameScene.GAMEPLAY) return;
+      // Ignore if typing in an input
+      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+      if (e.code === 'KeyM') setShowMarket(prev => !prev);
+      if (e.code === 'KeyT') setShowTimeline(prev => !prev);
+      if (e.code === 'KeyI') setShowKnowledge(prev => !prev);
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [scene]);
+
   // Game Over Checks
   useEffect(() => {
     if (scene === GameScene.GAMEPLAY) {
         if (suspicion >= 100) {
             setScene(GameScene.GAME_OVER_ARRESTED);
-        } else if (stockPrice < 5.00) {
+        } else if (stockPrice < 2.00) {
             setScene(GameScene.GAME_OVER_FIRED);
         }
     }
@@ -62,14 +84,39 @@ const App: React.FC = () => {
 
   const handleInteract = (id: string) => {
     const point = decisionPoints.find(d => d.id === id);
-    if (point && !point.resolved) {
-      setActiveDecision(point);
+    if (!point || point.resolved) return;
+
+    if (id === 'prepaid_capacity_memo') {
+        setActiveDocument({
+            title: point.title,
+            content: point.problem
+        });
+    } else {
+        setActiveDecision(point);
     }
+  };
+
+  const handleDocumentFlag = () => {
+    // Flagging document increases suspicion but might give some other benefit or just simulate the action
+    // For this app, we'll mark it as resolved and bump suspicion slightly as "investigation noise"
+    setSuspicion(prev => Math.min(100, prev + 5));
+    setActiveDocument(null);
+    setDecisionPoints(prev => prev.map(p => {
+        if (p.id === 'prepaid_capacity_memo') {
+            return { ...p, resolved: true };
+        }
+        return p;
+    }));
+    checkLevelCompletion();
   };
 
   const handleDecisionMade = (outcome: ChoiceOutcome) => {
     // Update Stats
-    setStockPrice(prev => Math.max(0, prev + outcome.stockImpact));
+    setStockPrice(prev => {
+        const newPrice = Math.max(0, prev + outcome.stockImpact);
+        setStockHistory(history => [...history, { period: activeDecision?.title || 'Decision', price: newPrice }]);
+        return newPrice;
+    });
     setSuspicion(prev => Math.min(100, Math.max(0, prev + outcome.suspicionImpact)));
 
     // Mark Resolved
@@ -220,6 +267,7 @@ const App: React.FC = () => {
             document: { title: d.title, content: d.problem } // adapter
         }))} 
         onInteract={handleInteract} 
+        onHover={setHoveredItem}
         onToggleHUD={() => setIsHudVisible(!isHudVisible)}
         weather={weather}
         timeOfDay={timeOfDay}
@@ -232,10 +280,12 @@ const App: React.FC = () => {
         suspicion={suspicion}
         isVisible={isHudVisible}
         weather={weather}
+        hoveredItem={hoveredItem}
         onToggleWeather={toggleWeather}
         onOpenQuiz={() => setShowQuiz(true)}
         onOpenTimeline={() => setShowTimeline(true)}
         onOpenKnowledge={() => setShowKnowledge(true)}
+        onOpenMarket={() => setShowMarket(true)}
         onAdvanceTime={advanceTime}
         timeOfDay={timeOfDay}
         currentLevel={currentLevel}
@@ -248,6 +298,14 @@ const App: React.FC = () => {
         isOpen={!!activeDecision}
         onClose={() => setActiveDecision(null)}
         onDecide={handleDecisionMade}
+      />
+      
+      <DocumentModal
+        isOpen={!!activeDocument}
+        onClose={() => setActiveDocument(null)}
+        title={activeDocument?.title || ''}
+        content={activeDocument?.content || ''}
+        onFlag={handleDocumentFlag}
       />
       
       <QuizModal 
@@ -268,6 +326,13 @@ const App: React.FC = () => {
         onClose={() => setShowKnowledge(false)} 
       />
 
+      <MarketTerminalModal
+        isOpen={showMarket}
+        onClose={() => setShowMarket(false)}
+        stockHistory={stockHistory}
+        currentPrice={stockPrice}
+      />
+
       <LevelTransitionModal 
         isOpen={showTransition} 
         nextLevel={GAME_LEVELS.find(l => l.id === currentLevelId + 1) || GAME_LEVELS[0]} 
@@ -275,11 +340,6 @@ const App: React.FC = () => {
       />
       
       <div className="fixed inset-0 pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.8)]" />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
-        <div className={`w-4 h-4 border border-slate-500/50 rounded-full flex items-center justify-center transition-opacity duration-300 ${isHudVisible ? 'opacity-100' : 'opacity-30'}`}>
-          <div className="w-1 h-1 bg-red-400 rounded-full" />
-        </div>
-      </div>
     </div>
   );
 };

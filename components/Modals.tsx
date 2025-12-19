@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { X, Send, AlertTriangle, TrendingUp, TrendingDown, Scale, ArrowRight, Award, ShieldCheck, User } from 'lucide-react';
+import { X, Send, AlertTriangle, TrendingUp, TrendingDown, Scale, ArrowRight, Award, ShieldCheck, User, BarChart3, Globe, Search, FileText, FileWarning } from 'lucide-react';
 import { analyzeForensicEvidence } from '../services/geminiService';
-import { DecisionPoint, QuizQuestion, TimelineEvent, KeyFigure, ImpactFact, FraudMethod, GameLevel, ChoiceOutcome } from '../types';
+import { DecisionPoint, QuizQuestion, TimelineEvent, KeyFigure, ImpactFact, FraudMethod, GameLevel, ChoiceOutcome, StockDataPoint } from '../types';
 import { KEY_FIGURES, WORLD_IMPACT, FRAUD_METHODS } from '../constants';
+import StockChart from './StockChart';
 
 interface ModalProps {
   isOpen: boolean;
@@ -33,22 +34,96 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   );
 };
 
+export const DocumentModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  content: string;
+  onFlag?: () => void;
+}> = ({ isOpen, onClose, title, content, onFlag }) => {
+  if (!isOpen) return null;
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="CLASSIFIED DOCUMENT">
+       <div className="bg-white text-slate-900 p-8 rounded-sm shadow-2xl relative overflow-hidden min-h-[400px] flex flex-col font-mono">
+          {/* Watermark */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-200 text-6xl font-black -rotate-45 pointer-events-none select-none opacity-50">
+             CONFIDENTIAL
+          </div>
+
+          <div className="border-b-2 border-slate-900 mb-6 pb-2 flex justify-between items-end relative z-10">
+             <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500">WorldCom Internal Correspondence</div>
+                <h1 className="text-2xl font-bold uppercase text-slate-900">{title}</h1>
+             </div>
+             <div className="text-red-600 border-2 border-red-600 px-2 py-1 text-xs font-black rotate-12 uppercase opacity-80">
+                Do Not Distribute
+             </div>
+          </div>
+
+          <div className="flex-grow whitespace-pre-line text-sm leading-relaxed relative z-10 font-medium text-slate-800 bg-amber-50/50 p-4 border border-slate-200">
+             {content}
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-slate-300 flex justify-between items-center relative z-10">
+             <div className="text-xs text-slate-500 italic">
+                Ref: ACCT-2002-XC-99
+             </div>
+             <div className="flex gap-3">
+                <button 
+                  onClick={onFlag} 
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider rounded shadow-lg flex items-center gap-2 transition-transform active:scale-95"
+                >
+                   <FileWarning size={14} /> Report Suspicious Activity
+                </button>
+                <button 
+                  onClick={onClose} 
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider rounded shadow-lg transition-transform active:scale-95"
+                >
+                   Close Evidence
+                </button>
+             </div>
+          </div>
+       </div>
+    </Modal>
+  );
+};
+
 export const DecisionModal: React.FC<{ 
   decisionPoint: DecisionPoint | null, 
   isOpen: boolean, 
   onClose: () => void,
   onDecide: (outcome: ChoiceOutcome) => void 
 }> = ({ decisionPoint, isOpen, onClose, onDecide }) => {
-  const [aiAnalysis, setAiAnalysis] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  const [shadowAnalysis, setShadowAnalysis] = useState<string>('');
+  const [forensicAnalysis, setForensicAnalysis] = useState<string>('');
+  const [shadowLoading, setShadowLoading] = useState(false);
+  const [forensicLoading, setForensicLoading] = useState(false);
 
-  const handleAiConsult = async (outcome: ChoiceOutcome) => {
+  const handleAiConsult = async (outcome: ChoiceOutcome, mode: 'shadow' | 'forensic') => {
     if (!decisionPoint) return;
-    setLoading(true);
-    const result = await analyzeForensicEvidence(decisionPoint.title, outcome.description, outcome.aiPrompt);
-    setAiAnalysis(result);
-    setLoading(false);
+    
+    if (mode === 'shadow') {
+        setShadowLoading(true);
+        const result = await analyzeForensicEvidence(decisionPoint.title, outcome.description, outcome.aiPrompt, 'shadow');
+        setShadowAnalysis(result);
+        setShadowLoading(false);
+    } else {
+        setForensicLoading(true);
+        const result = await analyzeForensicEvidence(decisionPoint.title, outcome.description, "Provide a strict forensic accounting analysis of this action.", 'forensic');
+        setForensicAnalysis(result);
+        setForensicLoading(false);
+    }
   };
+
+  // Reset state when modal closes or changes
+  React.useEffect(() => {
+      if (!isOpen) {
+          setShadowAnalysis('');
+          setForensicAnalysis('');
+          setShadowLoading(false);
+          setForensicLoading(false);
+      }
+  }, [isOpen]);
 
   if (!decisionPoint) return null;
 
@@ -81,8 +156,11 @@ export const DecisionModal: React.FC<{
                 >
                   EXECUTE
                </button>
-               <button onClick={() => handleAiConsult(decisionPoint.options.honest)} className="p-3 bg-slate-800 border border-slate-600 rounded text-sky-400 hover:text-white">
+               <button title="Shadow Consultant" onClick={() => handleAiConsult(decisionPoint.options.honest, 'shadow')} className="p-3 bg-slate-800 border border-slate-600 rounded text-sky-400 hover:text-white">
                   <User size={18} />
+               </button>
+               <button title="Forensic Analysis" onClick={() => handleAiConsult(decisionPoint.options.honest, 'forensic')} className="p-3 bg-slate-800 border border-slate-600 rounded text-amber-400 hover:text-white">
+                  <Search size={18} />
                </button>
             </div>
           </div>
@@ -106,29 +184,88 @@ export const DecisionModal: React.FC<{
                 >
                   COOK THE BOOKS
                </button>
-               <button onClick={() => handleAiConsult(decisionPoint.options.fraud)} className="p-3 bg-slate-800 border border-slate-600 rounded text-sky-400 hover:text-white">
+               <button title="Shadow Consultant" onClick={() => handleAiConsult(decisionPoint.options.fraud, 'shadow')} className="p-3 bg-slate-800 border border-slate-600 rounded text-sky-400 hover:text-white">
                   <User size={18} />
+               </button>
+               <button title="Forensic Analysis" onClick={() => handleAiConsult(decisionPoint.options.fraud, 'forensic')} className="p-3 bg-slate-800 border border-slate-600 rounded text-amber-400 hover:text-white">
+                  <Search size={18} />
                </button>
             </div>
           </div>
         </div>
 
-        {/* AI Output Area */}
-        {(loading || aiAnalysis) && (
+        {/* Shadow Consultant Output */}
+        {(shadowLoading || shadowAnalysis) && (
           <div className="mt-4 p-4 bg-slate-950 rounded-xl border border-sky-500/20 animate-in fade-in slide-in-from-bottom-4">
              <div className="flex items-center gap-2 text-sky-400 mb-2 font-bold text-xs tracking-widest uppercase">
               <User size={16} /> Shadow Consultant
             </div>
-            {loading ? (
+            {shadowLoading ? (
                <div className="text-sky-500/50 text-sm font-mono animate-pulse">Establishing encrypted channel...</div>
             ) : (
-               <div className="text-slate-300 text-sm leading-relaxed font-mono">{aiAnalysis}</div>
+               <div className="text-slate-300 text-sm leading-relaxed font-mono whitespace-pre-line">{shadowAnalysis}</div>
             )}
           </div>
         )}
+
+        {/* Forensic Analysis Output (New Section) */}
+        {(forensicLoading || forensicAnalysis) && (
+          <div className="mt-2 p-4 bg-amber-950/20 rounded-xl border border-amber-500/30 animate-in fade-in slide-in-from-bottom-4">
+             <div className="flex items-center gap-2 text-amber-400 mb-2 font-bold text-xs tracking-widest uppercase">
+              <FileText size={16} /> Forensic Audit Report
+            </div>
+            {forensicLoading ? (
+               <div className="text-amber-500/50 text-sm font-mono animate-pulse">Scanning GAAP Database...</div>
+            ) : (
+               <div className="text-amber-100 text-sm leading-relaxed font-mono border-l-2 border-amber-500/50 pl-3 whitespace-pre-line">
+                  {forensicAnalysis}
+               </div>
+            )}
+          </div>
+        )}
+
       </div>
     </Modal>
   );
+};
+
+export const MarketTerminalModal: React.FC<{ 
+    isOpen: boolean, 
+    onClose: () => void, 
+    stockHistory: StockDataPoint[], 
+    currentPrice: number 
+}> = ({ isOpen, onClose, stockHistory, currentPrice }) => {
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="MARKET TERMINAL">
+            <div className="space-y-6">
+                <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="text-emerald-500" size={20} />
+                    <span className="text-white font-bold font-mono">WCOM REAL-TIME DATA</span>
+                </div>
+                <StockChart data={stockHistory} currentPrice={currentPrice} />
+                
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                    <div className="bg-slate-800 p-4 rounded border border-slate-700">
+                        <h4 className="text-slate-400 text-[10px] font-bold uppercase mb-2 flex items-center gap-2"><Globe size={12}/> News Wire</h4>
+                        <ul className="space-y-2 text-xs text-slate-300 font-mono">
+                            <li className="border-b border-slate-700 pb-1">JP MORGAN: "WCOM Remains a Top Pick."</li>
+                            <li className="border-b border-slate-700 pb-1">SALOMON SMITH BARNEY: Grubman reiterates BUY rating. Target $80.</li>
+                            <li className="text-slate-500 italic">Rumor: Internal auditors working late hours?</li>
+                        </ul>
+                    </div>
+                    <div className="bg-slate-800 p-4 rounded border border-slate-700">
+                        <h4 className="text-slate-400 text-[10px] font-bold uppercase mb-2">Analyst Sentiment</h4>
+                        <div className="flex items-center gap-4">
+                             <div className="w-16 h-16 rounded-full border-4 border-emerald-500 flex items-center justify-center text-emerald-400 font-bold">STRONG BUY</div>
+                             <div className="text-xs text-slate-300">
+                                "The growth story is intact. Ignore the noise about line costs." - Jack Grubman
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Modal>
+    );
 };
 
 export const LevelTransitionModal: React.FC<{ isOpen: boolean, nextLevel: GameLevel, onAdvance: () => void }> = ({ isOpen, nextLevel, onAdvance }) => {
