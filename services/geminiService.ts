@@ -33,3 +33,38 @@ export const analyzeForensicEvidence = async (documentTitle: string, content: st
     return "Connection to Secret Server failed. Calculated Risk: High. Recommendation: Destroy the documents.";
   }
 };
+
+export const searchRelevantEvidence = async (query: string, documents: {id: string, title: string, content: string}[]) => {
+  if (!query.trim()) return null;
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `You are an intelligent search assistant for a game about the WorldCom fraud.
+      
+      Query: "${query}"
+      
+      Documents:
+      ${JSON.stringify(documents.map(d => ({id: d.id, text: d.title + ": " + d.content})))}
+      
+      Identify which documents are semantically relevant to the query.
+      Return a JSON array of the matching document IDs.
+      If no documents match, return an empty array.`,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+    
+    const text = response.text;
+    if (!text) return [];
+    return JSON.parse(text) as string[];
+  } catch (error) {
+    console.error("AI Search Error:", error);
+    // Fallback to simple text matching
+    const lowerQuery = query.toLowerCase();
+    return documents.filter(d => 
+        d.title.toLowerCase().includes(lowerQuery) || 
+        d.content.toLowerCase().includes(lowerQuery)
+    ).map(d => d.id);
+  }
+};

@@ -1,8 +1,9 @@
 
-import React from 'react';
-import { Search, Book, User, Wind, Activity, Sun, Cloud, CloudRain, Clock, Target, Briefcase, TrendingUp, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Book, User, Wind, Activity, Sun, Cloud, CloudRain, Clock, Target, Briefcase, TrendingUp, AlertTriangle, Loader2, X } from 'lucide-react';
 import { DecisionPoint, GameLevel } from '../types';
 import { WORLD_IMPACT } from '../constants';
+import { searchRelevantEvidence } from '../services/geminiService';
 
 interface HUDProps {
   decisionPoints: DecisionPoint[];
@@ -38,6 +39,10 @@ const HUD: React.FC<HUDProps> = ({
   onOpenKnowledge, 
   currentDate 
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [filteredIds, setFilteredIds] = useState<string[] | null>(null);
+
   const WeatherIcon = weather === 'clear' ? Sun : weather === 'cloudy' ? Cloud : CloudRain;
   
   const formatTime = (hour: number) => {
@@ -45,6 +50,39 @@ const HUD: React.FC<HUDProps> = ({
     const ampm = hour >= 12 ? 'PM' : 'AM';
     return `${h}:00 ${ampm}`;
   };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+        setFilteredIds(null);
+        return;
+    }
+    
+    setIsSearching(true);
+    const docs = decisionPoints.map(d => ({
+        id: d.id,
+        title: d.title,
+        content: d.problem
+    }));
+    
+    const ids = await searchRelevantEvidence(searchQuery, docs);
+    setFilteredIds(ids);
+    setIsSearching(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+        handleSearch();
+    }
+  };
+
+  const clearSearch = () => {
+      setSearchQuery('');
+      setFilteredIds(null);
+  };
+
+  const displayedPoints = decisionPoints.filter(d => 
+    filteredIds === null || filteredIds.includes(d.id)
+  );
 
   return (
     <div className="fixed inset-0 pointer-events-none z-10 flex flex-col justify-between p-6 overflow-hidden">
@@ -111,18 +149,55 @@ const HUD: React.FC<HUDProps> = ({
               <AlertTriangle size={14} /> Critical Decisions
             </span>
           </div>
+          
+          {/* Search Bar */}
+          <div className="bg-slate-900/80 border-x border-red-500/20 p-2 backdrop-blur-md">
+            <div className="relative flex items-center gap-2">
+                <div className="relative flex-grow">
+                    <input 
+                        type="text" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Search issues..." 
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded py-1.5 pl-8 pr-2 text-xs text-white focus:outline-none focus:border-red-500/50 transition-colors placeholder:text-slate-600 font-mono"
+                    />
+                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    {searchQuery && (
+                        <button onClick={clearSearch} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                            <X size={12} />
+                        </button>
+                    )}
+                </div>
+                <button 
+                    onClick={handleSearch}
+                    disabled={isSearching}
+                    className="p-1.5 bg-red-500/10 border border-red-500/30 rounded text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                >
+                    {isSearching ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
+                </button>
+            </div>
+          </div>
+
           <div className="bg-slate-950/80 border-x border-b border-red-500/20 rounded-b-xl overflow-y-auto p-2 backdrop-blur-md flex-grow scrollbar-thin scrollbar-thumb-red-500 shadow-2xl">
-            {decisionPoints.map(item => (
-              <div key={item.id} className={`p-3 mb-2 rounded flex items-center gap-3 transition-all ${item.resolved ? 'bg-slate-800 border-l-2 border-slate-600 opacity-50' : 'bg-red-500/10 border-l-2 border-red-500 animate-pulse'}`}>
-                <div className={`w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold ${item.resolved ? 'bg-slate-700 text-slate-400' : 'bg-red-500 text-white'}`}>
-                  {item.resolved ? 'DONE' : '!'}
+            {displayedPoints.length === 0 ? (
+                <div className="text-center py-8 text-slate-600 text-xs italic">
+                    {isSearching ? "Analyzing records..." : "No matching records found."}
                 </div>
-                <div>
-                  <div className="text-[11px] font-bold text-white uppercase">{item.title}</div>
-                  <div className="text-[9px] text-slate-400 uppercase">{item.resolved ? 'Action Taken' : 'Pending Action'}</div>
+            ) : (
+                displayedPoints.map(item => (
+                <div key={item.id} className={`p-3 mb-2 rounded flex items-center gap-3 transition-all ${item.resolved ? 'bg-slate-800 border-l-2 border-slate-600 opacity-50' : 'bg-red-500/10 border-l-2 border-red-500 animate-pulse'}`}>
+                    <div className={`w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold ${item.resolved ? 'bg-slate-700 text-slate-400' : 'bg-red-500 text-white'}`}>
+                    {item.resolved ? 'DONE' : '!'}
+                    </div>
+                    <div>
+                    <div className="text-[11px] font-bold text-white uppercase">{item.title}</div>
+                    <div className="text-[9px] text-slate-400 uppercase">{item.resolved ? 'Action Taken' : 'Pending Action'}</div>
+                    </div>
                 </div>
-              </div>
-            ))}
+                ))
+            )}
+            
             {progress === 100 && (
               <button onClick={onOpenQuiz} className="w-full mt-4 py-3 bg-slate-100 hover:bg-white text-slate-900 font-bold text-xs rounded-lg animate-bounce pointer-events-auto uppercase tracking-widest shadow-lg">
                 Face The Board
