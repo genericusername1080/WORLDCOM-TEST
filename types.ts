@@ -5,18 +5,39 @@ export interface Position {
   z: number;
 }
 
-export interface DocumentContent {
-  title: string;
-  content: string;
+export interface ChoiceOutcome {
+  label: string;
+  stockImpact: number;
+  suspicionImpact: number;
+  description: string;
+  aiPrompt: string;
 }
 
-export interface EvidenceItem {
+export interface DecisionPoint {
   id: string;
-  name: string;
-  description: string;
-  found: boolean;
+  title: string;
+  problem: string;
   position: Position;
-  document: DocumentContent;
+  resolved: boolean;
+  level: number;
+  options: {
+    honest: ChoiceOutcome;
+    fraud: ChoiceOutcome;
+  };
+}
+
+export interface KeyFigure {
+  name: string;
+  role: string;
+  avatar: string;
+  description: string;
+  outcome: string;
+}
+
+export interface ImpactFact {
+  title: string;
+  detail: string;
+  stat?: string;
 }
 
 export interface QuizQuestion {
@@ -24,13 +45,35 @@ export interface QuizQuestion {
   options: string[];
   correct: number;
   explanation: string;
+  level: number;
 }
 
 export enum GameScene {
   LOADING = 'LOADING',
   MENU = 'MENU',
   GAMEPLAY = 'GAMEPLAY',
-  FINALE = 'FINALE'
+  GAME_OVER_FIRED = 'GAME_OVER_FIRED',
+  GAME_OVER_ARRESTED = 'GAME_OVER_ARRESTED',
+  VICTORY_ESCAPED = 'VICTORY_ESCAPED' // Historical accuracy: Nobody really escaped, but maybe "Sentenced" is the end
+}
+
+export enum AuditRank {
+  CFO = 'Chief Financial Officer',
+  CONTROLLER = 'Corporate Controller',
+  CEO = 'Chief Executive Officer'
+}
+
+export interface GameLevel {
+  id: number;
+  title: string;
+  rank: AuditRank;
+  targetEPS: string; // Earnings Per Share target
+  description: string;
+}
+
+export interface TimelineEvent {
+  date: string;
+  event: string;
 }
 
 export interface FraudMethod {
@@ -39,7 +82,15 @@ export interface FraudMethod {
   amount: string;
 }
 
-export interface TimelineEvent {
-  date: string;
-  event: string;
+export interface EvidenceItem {
+  id: string;
+  name: string;
+  description: string;
+  found: boolean;
+  position: Position;
+  level: number;
+  document?: {
+    title: string;
+    content: string;
+  };
 }

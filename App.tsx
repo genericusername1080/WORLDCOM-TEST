@@ -1,22 +1,38 @@
 
-import React, { useState, useEffect } from 'react';
-import { GameScene, EvidenceItem } from './types';
-import { INITIAL_EVIDENCE, HISTORICAL_TIMELINE, QUIZ_QUESTIONS, FRAUD_METHODS } from './constants';
+import React, { useState, useEffect, useMemo } from 'react';
+import { GameScene, DecisionPoint, GameLevel, ChoiceOutcome } from './types';
+import { DECISION_POINTS, HISTORICAL_TIMELINE, QUIZ_QUESTIONS, GAME_LEVELS } from './constants';
 import ThreeDWorld from './components/ThreeDWorld';
 import HUD from './components/HUD';
-import { DocumentModal, QuizModal, TimelineModal } from './components/Modals';
-import { Shield, BookOpen, Search, Terminal } from 'lucide-react';
+import { DecisionModal, QuizModal, TimelineModal, KnowledgeHubModal, LevelTransitionModal } from './components/Modals';
+import { Briefcase, BookOpen, Search, Skull, AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
   const [scene, setScene] = useState<GameScene>(GameScene.LOADING);
-  const [evidence, setEvidence] = useState<EvidenceItem[]>(INITIAL_EVIDENCE);
-  const [activeDoc, setActiveDoc] = useState<EvidenceItem | null>(null);
+  const [decisionPoints, setDecisionPoints] = useState<DecisionPoint[]>(DECISION_POINTS);
+  const [activeDecision, setActiveDecision] = useState<DecisionPoint | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showKnowledge, setShowKnowledge] = useState(false);
+  const [showTransition, setShowTransition] = useState(false);
+  const [currentLevelId, setCurrentLevelId] = useState(1);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [isHudVisible, setIsHudVisible] = useState(true);
+  const [weather, setWeather] = useState<'clear' | 'cloudy' | 'rainy'>('clear');
+  const [timeOfDay, setTimeOfDay] = useState(9);
+  
+  // Game State Stats
+  const [stockPrice, setStockPrice] = useState(64.50);
+  const [suspicion, setSuspicion] = useState(10); // 0-100%
 
-  // Loading Simulation
+  const currentLevel = useMemo(() => 
+    GAME_LEVELS.find(l => l.id === currentLevelId) || GAME_LEVELS[0], 
+  [currentLevelId]);
+
+  const filteredDecisions = useMemo(() => 
+    decisionPoints.filter(e => e.level <= currentLevelId),
+  [decisionPoints, currentLevelId]);
+
   useEffect(() => {
     if (scene === GameScene.LOADING) {
       const interval = setInterval(() => {
@@ -33,32 +49,89 @@ const App: React.FC = () => {
     }
   }, [scene]);
 
-  const handleEvidenceFound = (id: string) => {
-    setEvidence(prev => prev.map(item => {
-      if (item.id === id && !item.found) {
-        const updated = { ...item, found: true };
-        setActiveDoc(updated);
-        return updated;
-      }
-      return item;
-    }));
+  // Game Over Checks
+  useEffect(() => {
+    if (scene === GameScene.GAMEPLAY) {
+        if (suspicion >= 100) {
+            setScene(GameScene.GAME_OVER_ARRESTED);
+        } else if (stockPrice < 5.00) {
+            setScene(GameScene.GAME_OVER_FIRED);
+        }
+    }
+  }, [suspicion, stockPrice, scene]);
+
+  const handleInteract = (id: string) => {
+    const point = decisionPoints.find(d => d.id === id);
+    if (point && !point.resolved) {
+      setActiveDecision(point);
+    }
   };
 
-  const progress = (evidence.filter(e => e.found).length / evidence.length) * 100;
+  const handleDecisionMade = (outcome: ChoiceOutcome) => {
+    // Update Stats
+    setStockPrice(prev => Math.max(0, prev + outcome.stockImpact));
+    setSuspicion(prev => Math.min(100, Math.max(0, prev + outcome.suspicionImpact)));
+
+    // Mark Resolved
+    setDecisionPoints(prev => prev.map(p => {
+        if (activeDecision && p.id === activeDecision.id) {
+            return { ...p, resolved: true };
+        }
+        return p;
+    }));
+
+    setActiveDecision(null);
+    checkLevelCompletion();
+  };
+
+  const checkLevelCompletion = () => {
+    // We check via timeout to ensure state updates first, 
+    // but React batching makes this tricky. We use the updated list logically.
+    // However, since state update is async, we can check remaining unresolved in filtered list minus 1
+    const unresolvedCount = filteredDecisions.filter(d => !d.resolved).length;
+    if (unresolvedCount <= 1) { // Current one is about to be resolved
+      setTimeout(() => setShowQuiz(true), 1000); 
+    }
+  };
+
+  const handleQuizPass = () => {
+    setShowQuiz(false);
+    if (currentLevelId < GAME_LEVELS.length) {
+      setShowTransition(true);
+    } else {
+      setScene(GameScene.VICTORY_ESCAPED);
+    }
+  };
+
+  const advanceLevel = () => {
+    setCurrentLevelId(prev => prev + 1);
+    setShowTransition(false);
+  };
+
+  const toggleWeather = () => {
+    setWeather(prev => {
+      if (prev === 'clear') return 'cloudy';
+      if (prev === 'cloudy') return 'rainy';
+      return 'clear';
+    });
+  };
+
+  const advanceTime = () => setTimeOfDay(prev => (prev + 1) % 24);
+
+  const levelProgress = useMemo(() => {
+    const levelDecisions = decisionPoints.filter(e => e.level === currentLevelId);
+    const resolved = levelDecisions.filter(e => e.resolved).length;
+    return (resolved / levelDecisions.length) * 100;
+  }, [decisionPoints, currentLevelId]);
 
   if (scene === GameScene.LOADING) {
     return (
       <div className="h-screen w-screen bg-[#0a0a1a] flex flex-col items-center justify-center p-8">
         <div className="max-w-md w-full">
-          <h1 className="text-4xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400 mb-2 text-center">WORLDCOM</h1>
-          <p className="text-slate-500 font-mono text-center mb-8 uppercase tracking-widest text-sm">Forensic Audit Simulator</p>
-          
+          <h1 className="text-4xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-500 mb-2 text-center">WORLDCOM</h1>
+          <p className="text-slate-500 font-mono text-center mb-8 uppercase tracking-widest text-sm">CFO Simulator</p>
           <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mb-4">
-            <div className="h-full bg-emerald-400 transition-all duration-300" style={{ width: `${loadingProgress}%` }} />
-          </div>
-          <div className="flex justify-between font-mono text-[10px] text-emerald-500/60 uppercase">
-            <span>Loading 3D Env...</span>
-            <span>{loadingProgress}%</span>
+            <div className="h-full bg-red-500 transition-all duration-300" style={{ width: `${loadingProgress}%` }} />
           </div>
         </div>
       </div>
@@ -67,81 +140,121 @@ const App: React.FC = () => {
 
   if (scene === GameScene.MENU) {
     return (
-      <div className="h-screen w-screen bg-gradient-to-br from-[#0a0a1a] to-[#1a0a2a] flex items-center justify-center p-8 relative overflow-hidden">
-        {/* Animated Background Decoration */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500 rounded-full blur-[100px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
-
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center p-8 relative overflow-hidden">
         <div className="max-w-2xl w-full relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-[10px] font-bold tracking-[0.3em] uppercase mb-6">
-            <Shield size={12} /> SEC Internal Taskforce
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-[10px] font-bold tracking-[0.3em] uppercase mb-6">
+            <AlertTriangle size={12} /> Confidential
           </div>
-          <h1 className="text-7xl font-orbitron font-black mb-4">
-            <span className="text-emerald-400">WORLD</span>
-            <span className="text-white">COM</span>
+          <h1 className="text-7xl font-orbitron font-black mb-4 uppercase tracking-tighter text-white">
+            COOK THE <span className="text-red-500">BOOKS</span>
           </h1>
-          <p className="text-xl text-slate-400 mb-12 font-light tracking-wide max-w-lg mx-auto">
-            Step into 2002. Uncover the largest accounting fraud in U.S. history through forensic audit exploration.
+          <p className="text-xl text-slate-400 mb-12 font-light tracking-wide max-w-lg mx-auto leading-relaxed">
+            You are Scott Sullivan, CFO of WorldCom. The market is crashing. The CEO demands results. How far will you go to keep the stock price up?
           </p>
-
-          <div className="grid gap-4 max-w-sm mx-auto">
-            <button 
-              onClick={() => setScene(GameScene.GAMEPLAY)}
-              className="group relative flex items-center justify-center gap-3 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-orbitron font-bold rounded-xl transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
-            >
-              <Search size={20} /> START INVESTIGATION
-            </button>
-            <button 
-              onClick={() => setShowKnowledge(true)}
-              className="flex items-center justify-center gap-3 py-4 bg-slate-900/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 text-white font-bold rounded-xl transition-all"
-            >
-              <BookOpen size={20} className="text-emerald-400" /> READ CASE BRIEF
-            </button>
-          </div>
-
-          <div className="mt-16 pt-8 border-t border-slate-800/50 flex justify-center gap-12 text-slate-500 font-mono text-xs uppercase tracking-widest">
-            <div>Missisipi HQ</div>
-            <div>June 2002</div>
-            <div>Phase: Discovery</div>
-          </div>
+          <button 
+            onClick={() => setScene(GameScene.GAMEPLAY)}
+            className="group relative inline-flex items-center justify-center gap-3 px-12 py-4 bg-white hover:bg-slate-200 text-slate-900 font-orbitron font-bold rounded-xl transition-all hover:scale-105"
+          >
+            ENTER OFFICE <Briefcase size={20} />
+          </button>
         </div>
-        
-        {/* Knowledge Modal (from menu) */}
-        <TimelineModal events={HISTORICAL_TIMELINE} isOpen={showKnowledge} onClose={() => setShowKnowledge(false)} />
+      </div>
+    );
+  }
+
+  if (scene === GameScene.GAME_OVER_ARRESTED) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center p-8 text-center border-8 border-red-600">
+        <Skull size={80} className="text-red-500 mb-6" />
+        <h1 className="text-6xl font-orbitron font-black text-red-500 mb-4">ARRESTED</h1>
+        <p className="text-2xl text-white mb-8">Suspicion level reached 100%. The FBI has raided the building.</p>
+        <div className="text-slate-400 font-mono mb-8">SENTENCE: 5 YEARS FEDERAL PRISON</div>
+        <button onClick={() => window.location.reload()} className="px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg">TRY AGAIN</button>
+      </div>
+    );
+  }
+
+  if (scene === GameScene.GAME_OVER_FIRED) {
+    return (
+      <div className="h-screen w-screen bg-slate-900 flex flex-col items-center justify-center p-8 text-center">
+        <Briefcase size={80} className="text-slate-500 mb-6" />
+        <h1 className="text-6xl font-orbitron font-black text-white mb-4">FIRED</h1>
+        <p className="text-2xl text-slate-300 mb-8">The stock price plummeted. Bernie Ebbers removed you as CFO.</p>
+        <button onClick={() => window.location.reload()} className="px-8 py-3 bg-white text-slate-900 font-bold rounded-lg">TRY AGAIN</button>
+      </div>
+    );
+  }
+
+  if (scene === GameScene.VICTORY_ESCAPED) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center p-8 text-center">
+        <div className="max-w-2xl p-8 bg-slate-900 border border-emerald-500/20 rounded-2xl shadow-2xl">
+          <h1 className="text-5xl font-orbitron font-black text-white mb-4">GAME OVER</h1>
+          <p className="text-xl text-slate-300 mb-8 leading-relaxed font-light">
+             You kept the fraud going until 2002. But the house of cards always falls.
+          </p>
+          <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-8 text-left space-y-2 font-mono text-sm">
+            <div>FINAL STOCK PRICE: <span className="text-emerald-400">${stockPrice.toFixed(2)}</span></div>
+            <div>FRAUD COMMITTED: <span className="text-red-400">$11 BILLION</span></div>
+            <div>OUTCOME: <span className="text-white">CONVICTED</span></div>
+          </div>
+          <button onClick={() => window.location.reload()} className="px-8 py-3 bg-white text-slate-900 font-bold rounded-lg transition-all">
+            PLAY AGAIN
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-slate-950">
+      {/* Reusing ThreeDWorld with evidence mapped to decision points */}
       <ThreeDWorld 
-        evidence={evidence} 
-        onInteract={handleEvidenceFound} 
-        weather="clear"
+        evidence={filteredDecisions.map(d => ({
+            id: d.id,
+            name: d.title,
+            description: d.problem,
+            found: d.resolved,
+            position: d.position,
+            level: d.level,
+            document: { title: d.title, content: d.problem } // adapter
+        }))} 
+        onInteract={handleInteract} 
+        onToggleHUD={() => setIsHudVisible(!isHudVisible)}
+        weather={weather}
+        timeOfDay={timeOfDay}
       />
       
       <HUD 
-        evidence={evidence}
-        progress={progress}
+        decisionPoints={filteredDecisions}
+        progress={levelProgress}
+        stockPrice={stockPrice}
+        suspicion={suspicion}
+        isVisible={isHudVisible}
+        weather={weather}
+        onToggleWeather={toggleWeather}
         onOpenQuiz={() => setShowQuiz(true)}
         onOpenTimeline={() => setShowTimeline(true)}
         onOpenKnowledge={() => setShowKnowledge(true)}
-        currentDate="JUNE 12, 2002"
+        onAdvanceTime={advanceTime}
+        timeOfDay={timeOfDay}
+        currentLevel={currentLevel}
+        onCheckCompletion={checkLevelCompletion}
+        currentDate={currentLevel.title}
       />
 
-      {/* Modals */}
-      <DocumentModal 
-        doc={activeDoc?.document || null} 
-        isOpen={!!activeDoc} 
-        onClose={() => setActiveDoc(null)} 
+      <DecisionModal 
+        decisionPoint={activeDecision}
+        isOpen={!!activeDecision}
+        onClose={() => setActiveDecision(null)}
+        onDecide={handleDecisionMade}
       />
       
       <QuizModal 
-        questions={QUIZ_QUESTIONS} 
+        questions={QUIZ_QUESTIONS.filter(q => q.level === currentLevelId)} 
         isOpen={showQuiz} 
-        onClose={() => setShowQuiz(false)} 
+        onClose={() => setShowQuiz(false)}
+        onPass={handleQuizPass}
       />
       
       <TimelineModal 
@@ -150,19 +263,21 @@ const App: React.FC = () => {
         onClose={() => setShowTimeline(false)} 
       />
 
-      <TimelineModal 
-        events={HISTORICAL_TIMELINE} 
+      <KnowledgeHubModal 
         isOpen={showKnowledge} 
         onClose={() => setShowKnowledge(false)} 
       />
+
+      <LevelTransitionModal 
+        isOpen={showTransition} 
+        nextLevel={GAME_LEVELS.find(l => l.id === currentLevelId + 1) || GAME_LEVELS[0]} 
+        onAdvance={advanceLevel} 
+      />
       
-      {/* Visual FX: Vignette */}
       <div className="fixed inset-0 pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.8)]" />
-      
-      {/* Crosshair */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
-        <div className="w-4 h-4 border border-emerald-500/50 rounded-full flex items-center justify-center">
-          <div className="w-1 h-1 bg-emerald-400 rounded-full" />
+        <div className={`w-4 h-4 border border-slate-500/50 rounded-full flex items-center justify-center transition-opacity duration-300 ${isHudVisible ? 'opacity-100' : 'opacity-30'}`}>
+          <div className="w-1 h-1 bg-red-400 rounded-full" />
         </div>
       </div>
     </div>

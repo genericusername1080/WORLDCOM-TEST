@@ -1,26 +1,35 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-// FIX: Always use a named parameter for the API key from process.env.API_KEY directly.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const analyzeForensicEvidence = async (documentTitle: string, content: string, userQuery: string) => {
   try {
-    // FIX: Properly type the response as GenerateContentResponse and use the .text property.
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `You are a forensic audit assistant helping an internal auditor at WorldCom in June 2002. 
-      You are analyzing a document titled "${documentTitle}" with the following content: "${content}". 
-      The user asks: "${userQuery}". 
-      Explain the accounting fraud implications in simple terms, focusing on how this helped hide WorldCom's actual financial state.`,
+      contents: `You are a corrupt, high-stakes financial consultant advising the CFO of WorldCom in 2002.
+      
+      The user is considering a financial maneuver:
+      TOPIC: "${documentTitle}"
+      DETAILS: "${content}"
+      
+      USER QUESTION: "${userQuery}"
+      
+      CONTEXT:
+      - The goal is to keep the stock price high at all costs.
+      - We need to hide losses but avoid getting caught by the SEC or Arthur Andersen.
+      - Use "Corporate Speak" to justify unethical actions (e.g., "aggressive accounting," "creative interpretation").
+      - Warn about the specific jail time or fines if this goes wrong.
+      
+      Your tone should be: Cynical, pragmatic, intelligent, and slightly nervous about the legal risks.`,
       config: {
-        temperature: 0.7,
+        temperature: 0.7, 
       }
     });
 
     return response.text;
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
-    return "I'm having trouble analyzing this document right now. Please try again later.";
+    return "Connection to Secret Server failed. Calculated Risk: High. Recommendation: Destroy the documents.";
   }
 };
