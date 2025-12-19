@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { X, Send, AlertTriangle, TrendingUp, TrendingDown, Scale, ArrowRight, Award, ShieldCheck, User, BarChart3, Globe, Search, FileText, FileWarning } from 'lucide-react';
+import { X, Send, AlertTriangle, TrendingUp, TrendingDown, Scale, ArrowRight, Award, ShieldCheck, User, BarChart3, Globe, Search, FileText, FileWarning, Siren } from 'lucide-react';
 import { analyzeForensicEvidence } from '../services/geminiService';
-import { DecisionPoint, QuizQuestion, TimelineEvent, KeyFigure, ImpactFact, FraudMethod, GameLevel, ChoiceOutcome, StockDataPoint } from '../types';
+import { DecisionPoint, QuizQuestion, TimelineEvent, KeyFigure, ImpactFact, FraudMethod, GameLevel, ChoiceOutcome, StockDataPoint, DifficultyConfig } from '../types';
 import { KEY_FIGURES, WORLD_IMPACT, FRAUD_METHODS } from '../constants';
 import StockChart from './StockChart';
 
@@ -92,8 +92,9 @@ export const DecisionModal: React.FC<{
   decisionPoint: DecisionPoint | null, 
   isOpen: boolean, 
   onClose: () => void,
-  onDecide: (outcome: ChoiceOutcome) => void 
-}> = ({ decisionPoint, isOpen, onClose, onDecide }) => {
+  onDecide: (outcome: ChoiceOutcome) => void,
+  difficultyConfig: DifficultyConfig
+}> = ({ decisionPoint, isOpen, onClose, onDecide, difficultyConfig }) => {
   const [shadowAnalysis, setShadowAnalysis] = useState<string>('');
   const [forensicAnalysis, setForensicAnalysis] = useState<string>('');
   const [shadowLoading, setShadowLoading] = useState(false);
@@ -104,12 +105,12 @@ export const DecisionModal: React.FC<{
     
     if (mode === 'shadow') {
         setShadowLoading(true);
-        const result = await analyzeForensicEvidence(decisionPoint.title, outcome.description, outcome.aiPrompt, 'shadow');
+        const result = await analyzeForensicEvidence(decisionPoint.title, outcome.description, outcome.aiPrompt, 'shadow', difficultyConfig);
         setShadowAnalysis(result);
         setShadowLoading(false);
     } else {
         setForensicLoading(true);
-        const result = await analyzeForensicEvidence(decisionPoint.title, outcome.description, "Provide a strict forensic accounting analysis of this action.", 'forensic');
+        const result = await analyzeForensicEvidence(decisionPoint.title, outcome.description, "Provide a strict forensic accounting analysis of this action.", 'forensic', difficultyConfig);
         setForensicAnalysis(result);
         setForensicLoading(false);
     }
@@ -166,10 +167,16 @@ export const DecisionModal: React.FC<{
           </div>
 
           {/* Fraud Option */}
-          <div className="p-4 rounded-xl border border-red-500/30 bg-red-950/10 hover:bg-red-900/20 transition-colors group relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-1 bg-red-500/20 text-[8px] text-red-400 uppercase font-bold rounded-bl">High Risk</div>
+          <div className="p-4 rounded-xl border-2 border-red-500/40 bg-red-950/10 hover:bg-red-900/20 transition-all duration-300 group relative overflow-hidden shadow-[0_0_10px_rgba(220,38,38,0.1)] hover:shadow-[0_0_25px_rgba(220,38,38,0.4)] hover:border-red-500 hover:scale-[1.02]">
+            {/* Visual Indicator of Risk */}
+            <div className="absolute top-0 right-0 p-1.5 bg-red-600 text-[9px] text-white uppercase font-black tracking-widest rounded-bl flex items-center gap-1 shadow-lg z-10">
+               <Siren size={12} className="animate-pulse" /> High Risk
+            </div>
+            {/* Pulsing overlay */}
+            <div className="absolute inset-0 bg-red-500/5 opacity-0 group-hover:animate-pulse pointer-events-none" />
+
             <h4 className="text-red-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-              <AlertTriangle size={16} /> "Creative" Accounting
+              <AlertTriangle size={16} className="text-red-500 animate-bounce" /> "Creative" Accounting
             </h4>
             <div className="text-white font-bold text-lg mb-2">{decisionPoint.options.fraud.label}</div>
             <div className="flex gap-4 text-xs font-mono mb-4">

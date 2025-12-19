@@ -1,5 +1,32 @@
 
-import { DecisionPoint, FraudMethod, QuizQuestion, TimelineEvent, KeyFigure, ImpactFact, GameLevel, AuditRank } from './types';
+import { DecisionPoint, FraudMethod, QuizQuestion, TimelineEvent, KeyFigure, ImpactFact, GameLevel, AuditRank, DifficultyConfig, Difficulty } from './types';
+
+export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultyConfig> = {
+  EASY: {
+    label: "INTERN",
+    description: "Slower stock decline. Forgiving auditors.",
+    passiveDecayRate: 0.02,
+    suspicionMultiplier: 0.8,
+    stockLossMultiplier: 0.8,
+    auditorAggression: "Junior Auditor: Cautious and polite. Focuses on basic compliance."
+  },
+  MEDIUM: {
+    label: "CFO",
+    description: "Standard market pressure. Watch your back.",
+    passiveDecayRate: 0.05,
+    suspicionMultiplier: 1.0,
+    stockLossMultiplier: 1.0,
+    auditorAggression: "Senior Auditor: Professional but skeptical. Will ask for documentation."
+  },
+  HARD: {
+    label: "CRISIS",
+    description: "Rapid market crash. Aggressive SEC investigation.",
+    passiveDecayRate: 0.12,
+    suspicionMultiplier: 1.5,
+    stockLossMultiplier: 1.3,
+    auditorAggression: "Lead Forensic Investigator: Hostile and assumes guilt. Looking for specific jail-time offenses."
+  }
+};
 
 export const GAME_LEVELS: GameLevel[] = [
   {

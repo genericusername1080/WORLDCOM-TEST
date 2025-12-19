@@ -100,3 +100,14 @@ export interface StockDataPoint {
   period: string;
   price: number;
 }
+
+export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+export interface DifficultyConfig {
+  label: string;
+  description: string;
+  passiveDecayRate: number; // Stock lost per tick
+  suspicionMultiplier: number;
+  stockLossMultiplier: number; // Multiplier for honest bad news
+  auditorAggression: string; // Description for AI context
+}

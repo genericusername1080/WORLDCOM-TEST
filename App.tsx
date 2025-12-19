@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { GameScene, DecisionPoint, GameLevel, ChoiceOutcome, StockDataPoint, EvidenceItem } from './types';
-import { DECISION_POINTS, HISTORICAL_TIMELINE, QUIZ_QUESTIONS, GAME_LEVELS } from './constants';
+import { GameScene, DecisionPoint, GameLevel, ChoiceOutcome, StockDataPoint, EvidenceItem, Difficulty } from './types';
+import { DECISION_POINTS, HISTORICAL_TIMELINE, QUIZ_QUESTIONS, GAME_LEVELS, DIFFICULTY_SETTINGS } from './constants';
 import ThreeDWorld from './components/ThreeDWorld';
 import HUD from './components/HUD';
 import { DecisionModal, QuizModal, TimelineModal, KnowledgeHubModal, LevelTransitionModal, MarketTerminalModal, DocumentModal } from './components/Modals';
-import { Briefcase, BookOpen, Search, Skull, AlertTriangle } from 'lucide-react';
+import { Briefcase, BookOpen, Search, Skull, AlertTriangle, Settings } from 'lucide-react';
 
 const App: React.FC = () => {
   const [scene, setScene] = useState<GameScene>(GameScene.LOADING);
@@ -22,6 +22,9 @@ const App: React.FC = () => {
   const [isHudVisible, setIsHudVisible] = useState(true);
   const [weather, setWeather] = useState<'clear' | 'cloudy' | 'rainy'>('clear');
   const [timeOfDay, setTimeOfDay] = useState(9);
+  
+  // Difficulty State
+  const [difficulty, setDifficulty] = useState<Difficulty>('MEDIUM');
   
   // Interaction State
   const [hoveredItem, setHoveredItem] = useState<EvidenceItem | null>(null);
@@ -71,6 +74,19 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [scene]);
 
+  // Passive Stock Decay Loop (Based on Difficulty)
+  useEffect(() => {
+    if (scene !== GameScene.GAMEPLAY || activeDecision !== null || showQuiz) return;
+
+    const config = DIFFICULTY_SETTINGS[difficulty];
+    const decayInterval = setInterval(() => {
+        setStockPrice(prev => Math.max(0, prev - config.passiveDecayRate));
+    }, 1000);
+
+    return () => clearInterval(decayInterval);
+  }, [scene, difficulty, activeDecision, showQuiz]);
+
+
   // Game Over Checks
   useEffect(() => {
     if (scene === GameScene.GAMEPLAY) {
@@ -97,8 +113,6 @@ const App: React.FC = () => {
   };
 
   const handleDocumentFlag = () => {
-    // Flagging document increases suspicion but might give some other benefit or just simulate the action
-    // For this app, we'll mark it as resolved and bump suspicion slightly as "investigation noise"
     setSuspicion(prev => Math.min(100, prev + 5));
     setActiveDocument(null);
     setDecisionPoints(prev => prev.map(p => {
@@ -111,13 +125,28 @@ const App: React.FC = () => {
   };
 
   const handleDecisionMade = (outcome: ChoiceOutcome) => {
+    const config = DIFFICULTY_SETTINGS[difficulty];
+    
+    // Calculate Multipliers
+    let stockChange = outcome.stockImpact;
+    if (stockChange < 0) {
+        // Punish honest drops more in hard mode
+        stockChange *= config.stockLossMultiplier;
+    }
+
+    let suspicionChange = outcome.suspicionImpact;
+    if (suspicionChange > 0) {
+        // Punish fraud more in hard mode
+        suspicionChange *= config.suspicionMultiplier;
+    }
+
     // Update Stats
     setStockPrice(prev => {
-        const newPrice = Math.max(0, prev + outcome.stockImpact);
+        const newPrice = Math.max(0, prev + stockChange);
         setStockHistory(history => [...history, { period: activeDecision?.title || 'Decision', price: newPrice }]);
         return newPrice;
     });
-    setSuspicion(prev => Math.min(100, Math.max(0, prev + outcome.suspicionImpact)));
+    setSuspicion(prev => Math.min(100, Math.max(0, prev + suspicionChange)));
 
     // Mark Resolved
     setDecisionPoints(prev => prev.map(p => {
@@ -132,9 +161,6 @@ const App: React.FC = () => {
   };
 
   const checkLevelCompletion = () => {
-    // We check via timeout to ensure state updates first, 
-    // but React batching makes this tricky. We use the updated list logically.
-    // However, since state update is async, we can check remaining unresolved in filtered list minus 1
     const unresolvedCount = filteredDecisions.filter(d => !d.resolved).length;
     if (unresolvedCount <= 1) { // Current one is about to be resolved
       setTimeout(() => setShowQuiz(true), 1000); 
@@ -195,9 +221,33 @@ const App: React.FC = () => {
           <h1 className="text-7xl font-orbitron font-black mb-4 uppercase tracking-tighter text-white">
             COOK THE <span className="text-red-500">BOOKS</span>
           </h1>
-          <p className="text-xl text-slate-400 mb-12 font-light tracking-wide max-w-lg mx-auto leading-relaxed">
+          <p className="text-xl text-slate-400 mb-8 font-light tracking-wide max-w-lg mx-auto leading-relaxed">
             You are Scott Sullivan, CFO of WorldCom. The market is crashing. The CEO demands results. How far will you go to keep the stock price up?
           </p>
+          
+          {/* Difficulty Selector */}
+          <div className="mb-8">
+             <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Clearance Level</div>
+             <div className="flex justify-center gap-2">
+                {(Object.keys(DIFFICULTY_SETTINGS) as Difficulty[]).map(d => (
+                    <button
+                        key={d}
+                        onClick={() => setDifficulty(d)}
+                        className={`px-4 py-2 border rounded font-mono text-xs uppercase transition-all ${
+                            difficulty === d 
+                            ? 'bg-red-500 border-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' 
+                            : 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-500'
+                        }`}
+                    >
+                        {d}
+                    </button>
+                ))}
+             </div>
+             <div className="mt-2 text-xs text-slate-400 font-mono h-4">
+                {DIFFICULTY_SETTINGS[difficulty].description}
+             </div>
+          </div>
+
           <button 
             onClick={() => setScene(GameScene.GAMEPLAY)}
             className="group relative inline-flex items-center justify-center gap-3 px-12 py-4 bg-white hover:bg-slate-200 text-slate-900 font-orbitron font-bold rounded-xl transition-all hover:scale-105"
@@ -215,7 +265,7 @@ const App: React.FC = () => {
         <Skull size={80} className="text-red-500 mb-6" />
         <h1 className="text-6xl font-orbitron font-black text-red-500 mb-4">ARRESTED</h1>
         <p className="text-2xl text-white mb-8">Suspicion level reached 100%. The FBI has raided the building.</p>
-        <div className="text-slate-400 font-mono mb-8">SENTENCE: 5 YEARS FEDERAL PRISON</div>
+        <div className="text-slate-400 font-mono mb-8">SENTENCE: {difficulty === 'HARD' ? '25' : '5'} YEARS FEDERAL PRISON</div>
         <button onClick={() => window.location.reload()} className="px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg">TRY AGAIN</button>
       </div>
     );
@@ -244,6 +294,7 @@ const App: React.FC = () => {
             <div>FINAL STOCK PRICE: <span className="text-emerald-400">${stockPrice.toFixed(2)}</span></div>
             <div>FRAUD COMMITTED: <span className="text-red-400">$11 BILLION</span></div>
             <div>OUTCOME: <span className="text-white">CONVICTED</span></div>
+            <div>MODE: <span className="text-sky-400">{difficulty}</span></div>
           </div>
           <button onClick={() => window.location.reload()} className="px-8 py-3 bg-white text-slate-900 font-bold rounded-lg transition-all">
             PLAY AGAIN
@@ -298,6 +349,7 @@ const App: React.FC = () => {
         isOpen={!!activeDecision}
         onClose={() => setActiveDecision(null)}
         onDecide={handleDecisionMade}
+        difficultyConfig={DIFFICULTY_SETTINGS[difficulty]}
       />
       
       <DocumentModal

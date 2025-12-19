@@ -1,5 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { Difficulty, DifficultyConfig } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -7,7 +8,8 @@ export const analyzeForensicEvidence = async (
   documentTitle: string, 
   content: string, 
   userQuery: string,
-  mode: 'shadow' | 'forensic' = 'shadow'
+  mode: 'shadow' | 'forensic' = 'shadow',
+  difficultyConfig?: DifficultyConfig
 ) => {
   try {
     let systemInstruction = "";
@@ -23,7 +25,9 @@ export const analyzeForensicEvidence = async (
       
       Your tone should be: Cynical, pragmatic, intelligent, and slightly nervous about the legal risks.`;
     } else {
-      systemInstruction = `You are a Senior Forensic Accountant for the SEC (Securities and Exchange Commission).
+      const auditorPersonality = difficultyConfig?.auditorAggression || "Senior Forensic Accountant";
+      
+      systemInstruction = `You are a ${auditorPersonality} for the SEC (Securities and Exchange Commission).
       
       CONTEXT:
       - You are analyzing a potential financial crime.
