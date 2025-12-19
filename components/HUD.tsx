@@ -112,8 +112,8 @@ const HUD: React.FC<HUDProps> = ({
                  <Keyboard size={12} /> Controls
              </div>
              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs font-mono text-slate-300">
-                 <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">W,A,S,D</span> Move</div>
-                 <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">MOUSE</span> Look</div>
+                 <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">W,S</span> Move</div>
+                 <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">A,D</span> Turn</div>
                  <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">E</span> Interact</div>
                  <div className="flex items-center gap-2"><span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-600 text-white">TAB</span> Toggle HUD</div>
              </div>
@@ -252,10 +252,13 @@ const HUD: React.FC<HUDProps> = ({
               <p className="text-[11px] text-slate-400 leading-relaxed mb-4">{currentLevel.description}</p>
               
               <div className="space-y-3 pt-4 border-t border-slate-800">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Company Status</div>
-                {WORLD_IMPACT.slice(0, 2).map((impact, i) => (
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">World Impact</div>
+                {WORLD_IMPACT.map((impact, i) => (
                   <div key={i} className="bg-slate-800/50 p-2 rounded border border-slate-700">
-                    <div className="text-white font-bold text-[9px] mb-1">{impact.title}</div>
+                    <div className="flex justify-between items-start">
+                        <div className="text-white font-bold text-[9px] mb-1">{impact.title}</div>
+                        {impact.stat && <div className="text-red-400 font-mono text-[9px] font-bold">{impact.stat}</div>}
+                    </div>
                     <div className="text-slate-400 text-[8px] leading-tight">{impact.detail}</div>
                   </div>
                 ))}

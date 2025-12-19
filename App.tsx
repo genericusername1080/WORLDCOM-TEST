@@ -4,8 +4,8 @@ import { GameScene, DecisionPoint, GameLevel, ChoiceOutcome, StockDataPoint, Evi
 import { DECISION_POINTS, HISTORICAL_TIMELINE, QUIZ_QUESTIONS, GAME_LEVELS, DIFFICULTY_SETTINGS } from './constants';
 import ThreeDWorld from './components/ThreeDWorld';
 import HUD from './components/HUD';
-import { DecisionModal, QuizModal, TimelineModal, KnowledgeHubModal, LevelTransitionModal, MarketTerminalModal, DocumentModal } from './components/Modals';
-import { Briefcase, BookOpen, Search, Skull, AlertTriangle, Settings } from 'lucide-react';
+import { DecisionModal, QuizModal, TimelineModal, KnowledgeHubModal, LevelTransitionModal, MarketTerminalModal, DocumentModal, CreditsModal } from './components/Modals';
+import { Briefcase, BookOpen, Search, Skull, AlertTriangle, Settings, FileText } from 'lucide-react';
 
 const App: React.FC = () => {
   const [scene, setScene] = useState<GameScene>(GameScene.LOADING);
@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [showKnowledge, setShowKnowledge] = useState(false);
   const [showMarket, setShowMarket] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
   const [currentLevelId, setCurrentLevelId] = useState(1);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isHudVisible, setIsHudVisible] = useState(true);
@@ -248,13 +249,23 @@ const App: React.FC = () => {
              </div>
           </div>
 
-          <button 
-            onClick={() => setScene(GameScene.GAMEPLAY)}
-            className="group relative inline-flex items-center justify-center gap-3 px-12 py-4 bg-white hover:bg-slate-200 text-slate-900 font-orbitron font-bold rounded-xl transition-all hover:scale-105"
-          >
-            ENTER OFFICE <Briefcase size={20} />
-          </button>
+          <div className="flex flex-col gap-3 items-center">
+            <button 
+                onClick={() => setScene(GameScene.GAMEPLAY)}
+                className="group relative inline-flex items-center justify-center gap-3 px-12 py-4 bg-white hover:bg-slate-200 text-slate-900 font-orbitron font-bold rounded-xl transition-all hover:scale-105 min-w-[280px]"
+            >
+                ENTER OFFICE <Briefcase size={20} />
+            </button>
+            <button 
+                onClick={() => setShowCredits(true)}
+                className="group relative inline-flex items-center justify-center gap-2 px-8 py-3 bg-transparent border border-slate-700 hover:border-emerald-500 text-slate-400 hover:text-emerald-400 font-mono text-xs font-bold rounded-xl transition-all min-w-[280px]"
+            >
+                SYSTEM PROTOCOLS / CREDITS <FileText size={14} />
+            </button>
+          </div>
         </div>
+
+        <CreditsModal isOpen={showCredits} onClose={() => setShowCredits(false)} />
       </div>
     );
   }

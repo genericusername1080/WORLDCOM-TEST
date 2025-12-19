@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Send, AlertTriangle, TrendingUp, TrendingDown, Scale, ArrowRight, Award, ShieldCheck, User, BarChart3, Globe, Search, FileText, FileWarning, Siren } from 'lucide-react';
+import { X, Send, AlertTriangle, TrendingUp, TrendingDown, Scale, ArrowRight, Award, ShieldCheck, User, BarChart3, Globe, Search, FileText, FileWarning, Siren, Cpu, Code, Terminal, Copyright, Shield } from 'lucide-react';
 import { analyzeForensicEvidence } from '../services/geminiService';
 import { DecisionPoint, QuizQuestion, TimelineEvent, KeyFigure, ImpactFact, FraudMethod, GameLevel, ChoiceOutcome, StockDataPoint, DifficultyConfig } from '../types';
 import { KEY_FIGURES, WORLD_IMPACT, FRAUD_METHODS } from '../constants';
@@ -19,8 +19,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
       <div className="bg-slate-900 border border-emerald-500/30 w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300">
         <div className="p-4 border-b border-emerald-500/20 flex justify-between items-center bg-slate-950/50">
-          <h2 className="font-orbitron text-red-500 text-sm tracking-widest uppercase font-bold flex items-center gap-2">
-            <AlertTriangle size={16} /> {title}
+          <h2 className="font-orbitron text-emerald-500 text-sm tracking-widest uppercase font-bold flex items-center gap-2">
+            <Terminal size={16} /> {title}
           </h2>
           <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
             <X size={20} />
@@ -430,6 +430,93 @@ export const TimelineModal: React.FC<{ events: TimelineEvent[], isOpen: boolean,
             </div>
           </div>
         ))}
+      </div>
+    </Modal>
+  );
+};
+
+export const CreditsModal: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isOpen, onClose }) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="SYSTEM PROTOCOLS & CREDITS">
+      <div className="space-y-8 font-mono">
+        
+        {/* Branding */}
+        <div className="flex flex-col items-center justify-center py-6 border-b border-emerald-500/20 bg-emerald-950/10 rounded-xl">
+           <Cpu size={48} className="text-emerald-500 mb-4 animate-pulse" />
+           <h1 className="text-2xl font-black font-orbitron tracking-widest text-white">GLASS STONE</h1>
+           <p className="text-emerald-400/60 text-xs tracking-[0.5em] uppercase mt-1">Research & Development Lab</p>
+           <p className="text-slate-500 text-[10px] mt-2">EST. 2025-2026</p>
+        </div>
+
+        {/* Development Team */}
+        <div>
+           <h3 className="flex items-center gap-2 text-white font-bold uppercase tracking-widest text-sm mb-4 border-l-2 border-emerald-500 pl-3">
+              <Code size={16} className="text-emerald-500" /> Development Lead
+           </h3>
+           <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 flex justify-between items-center group hover:border-emerald-500/50 transition-colors">
+              <div>
+                 <div className="text-white font-bold">Gabriel B. Rodriguez</div>
+                 <div className="text-slate-400 text-xs mt-1">CEO & Lead Engineer</div>
+              </div>
+              <div className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded border border-emerald-500/20">
+                 FULL STACK
+              </div>
+           </div>
+           
+           <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="bg-slate-800/30 p-3 rounded border border-slate-700/50">
+                 <div className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">Design & UI/UX</div>
+                 <div className="text-slate-300 text-sm font-bold">Glass Stone Studio</div>
+              </div>
+              <div className="bg-slate-800/30 p-3 rounded border border-slate-700/50">
+                 <div className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">AI Architecture</div>
+                 <div className="text-slate-300 text-sm font-bold">Gemini 1.5 Integration</div>
+              </div>
+           </div>
+        </div>
+
+        {/* Benchmark Documentation */}
+        <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Terminal size={100} />
+           </div>
+           <h3 className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-xs mb-4">
+              <BarChart3 size={14} /> Benchmark Documentation
+           </h3>
+           <div className="space-y-4 text-xs text-slate-300 leading-relaxed relative z-10">
+              <p>
+                 <strong className="text-white">PROJECT DESIGNATION:</strong> WorldCom Forensic Simulation
+              </p>
+              <p>
+                 <strong className="text-white">OBJECTIVE:</strong> Benchmarking Large Language Model (LLM) World Knowledge and reasoning capabilities within dynamic, high-stakes 3D contexts.
+              </p>
+              <p>
+                 <strong className="text-white">METHODOLOGY:</strong> utilizing Real-time RAG (Retrieval Augmented Generation) against historical GAAP data and SEC filings. The simulation tests the model's ability to interpret complex financial scenarios and simulate specific persona-based responses (Forensic Auditor vs. Corrupt Consultant).
+              </p>
+              <p>
+                 <strong className="text-white">PERFORMANCE METRIC:</strong> Accuracy of financial advice against historical outcomes of the 2002 WorldCom scandal.
+              </p>
+           </div>
+        </div>
+
+        {/* Legal Notice */}
+        <div className="border-t border-slate-800 pt-6 mt-2">
+           <div className="flex items-start gap-3 opacity-60 hover:opacity-100 transition-opacity">
+              <ShieldCheck size={16} className="text-slate-400 mt-1 shrink-0" />
+              <div className="text-[10px] text-slate-500 leading-relaxed">
+                 <p className="mb-2">
+                    <strong className="text-slate-300">LEGAL NOTICE:</strong> This application, its design, code architecture, and original assets are the exclusive property of Glass Stone.
+                 </p>
+                 <p className="flex items-center gap-1">
+                    <Copyright size={10} /> 2025-2026 Glass Stone. All Rights Reserved.
+                 </p>
+                 <p className="mt-2 italic">
+                    Unauthorized reproduction, reverse engineering, or distribution of this software or its benchmark protocols is strictly prohibited.
+                 </p>
+              </div>
+           </div>
+        </div>
+
       </div>
     </Modal>
   );

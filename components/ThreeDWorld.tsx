@@ -692,6 +692,12 @@ const ThreeDWorld: React.FC<ThreeDWorldProps> = ({ evidence, onInteract, onHover
 
       // Movement
       const smoothFactor = 15.0 * delta;
+      
+      // ROTATION LOGIC (A/D now controls Yaw)
+      const rotateSpeed = 2.0;
+      if (controlsRef.current.left) targetRotation.current.yaw += rotateSpeed * delta;
+      if (controlsRef.current.right) targetRotation.current.yaw -= rotateSpeed * delta;
+
       currentRotation.current.yaw = THREE.MathUtils.lerp(currentRotation.current.yaw, targetRotation.current.yaw, smoothFactor);
       currentRotation.current.pitch = THREE.MathUtils.lerp(currentRotation.current.pitch, targetRotation.current.pitch, smoothFactor);
       camera.rotation.set(currentRotation.current.pitch, currentRotation.current.yaw, 0);
@@ -703,8 +709,7 @@ const ThreeDWorld: React.FC<ThreeDWorldProps> = ({ evidence, onInteract, onHover
 
       if (controlsRef.current.forward) velocity.current.z -= moveSpeed * delta;
       if (controlsRef.current.backward) velocity.current.z += moveSpeed * delta;
-      if (controlsRef.current.left) velocity.current.x -= moveSpeed * delta;
-      if (controlsRef.current.right) velocity.current.x += moveSpeed * delta;
+      // No longer applying A/D to velocity.x
 
       camera.translateX(velocity.current.x * delta);
       camera.translateZ(velocity.current.z * delta);
@@ -755,17 +760,11 @@ const ThreeDWorld: React.FC<ThreeDWorldProps> = ({ evidence, onInteract, onHover
       if (e.code === 'KeyA') controlsRef.current.left = false;
       if (e.code === 'KeyD') controlsRef.current.right = false;
     };
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isIntro) return;
-      if (document.pointerLockElement === renderer.domElement) {
-        const sensitivity = 0.002;
-        targetRotation.current.yaw -= e.movementX * sensitivity;
-        targetRotation.current.pitch -= e.movementY * sensitivity;
-        targetRotation.current.pitch = Math.max(-1.5, Math.min(1.5, targetRotation.current.pitch));
-      }
-    };
+    
+    // Removed handleMouseMove as requested
+
     const handleContainerClick = () => { 
-        if (!isIntro) renderer.domElement.requestPointerLock();
+        // Removed requestPointerLock as requested
         // Resume Audio Context on first interaction
         if (listenerRef.current && listenerRef.current.context.state === 'suspended') {
             listenerRef.current.context.resume().then(() => {
@@ -782,7 +781,7 @@ const ThreeDWorld: React.FC<ThreeDWorldProps> = ({ evidence, onInteract, onHover
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('mousemove', handleMouseMove);
+    // Removed mousemove listener
     containerRef.current.addEventListener('click', handleContainerClick);
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -793,7 +792,7 @@ const ThreeDWorld: React.FC<ThreeDWorldProps> = ({ evidence, onInteract, onHover
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('mousemove', handleMouseMove);
+      // Removed mousemove listener removal
       if(containerRef.current) containerRef.current.removeEventListener('click', handleContainerClick);
       renderer.dispose();
       
@@ -806,6 +805,7 @@ const ThreeDWorld: React.FC<ThreeDWorldProps> = ({ evidence, onInteract, onHover
 
   // Day/Night & Weather Update Loop
   useEffect(() => {
+    // ... (Existing Day/Night code remains unchanged)
     if (!sceneRef.current || !rainRef.current) return;
     const scene = sceneRef.current;
     const sunLight = scene.getObjectByName("sunLight") as THREE.DirectionalLight;
